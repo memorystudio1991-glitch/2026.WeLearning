@@ -130,6 +130,7 @@ let schedules = { current: {}, next: {} };
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
+  initPasswordGate();
   loadData();
   updateWeekPillButtons();
   renderMemberSelectors();
@@ -1771,4 +1772,78 @@ function deleteWishlistItem(id) {
   saveWishlistData(list);
   renderWishlistGrid();
   showToast(`🗑️ 위시리스트 항목이 삭제되었습니다.`);
+}
+
+/**
+ * =====================================================================
+ *  🔒 프라이빗 4자리 비밀번호 잠금 게이트웨이 로직 (PIN: 0987)
+ * =====================================================================
+ */
+const APP_PIN = '0987';
+const PIN_STORAGE_KEY = 'wemeet_unlocked_v1';
+
+function initPasswordGate() {
+  const overlay = document.getElementById('password-gate-overlay');
+  const form = document.getElementById('gate-pin-form');
+  const input = document.getElementById('gate-pin-input');
+  const errorMsg = document.getElementById('gate-error-msg');
+  if (!overlay || !input) return;
+
+  function unlockGate(fromUrl) {
+    localStorage.setItem(PIN_STORAGE_KEY, 'true');
+    overlay.classList.add('unlocked');
+    if (fromUrl) {
+      showToast('🔑 인증 링크로 자동 입장되었습니다.');
+    } else {
+      showToast('🔓 인증되었습니다. 환영합니다!');
+    }
+  }
+
+  // 1. URL 쿼리 파라미터 프리패스 체크 (예: ?pin=0987 또는 ?key=0987)
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramPin = urlParams.get('pin') || urlParams.get('key');
+  if (paramPin === APP_PIN) {
+    unlockGate(true);
+    return;
+  }
+
+  // 2. 이미 브라우저(localStorage)에 인증되어 있는지 체크
+  const isUnlocked = localStorage.getItem(PIN_STORAGE_KEY) === 'true';
+  if (isUnlocked) {
+    overlay.classList.add('unlocked');
+    return;
+  }
+
+  // 3. 비밀번호 검증 핸들러
+  const handleUnlock = () => {
+    const val = input.value.trim();
+    if (val === APP_PIN) {
+      unlockGate(false);
+    } else {
+      input.classList.add('error');
+      if (errorMsg) {
+        errorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> 비밀번호가 일치하지 않습니다.';
+      }
+      input.value = '';
+      input.focus();
+      setTimeout(() => input.classList.remove('error'), 400);
+    }
+  };
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleUnlock();
+    });
+  }
+
+  // 4자리 입력 시 자동 확인
+  input.addEventListener('input', () => {
+    if (input.value.length === 4) {
+      handleUnlock();
+    }
+  });
+
+  // 초기 포커스
+  setTimeout(() => input.focus(), 200);
 }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>이번 주 약속 조율 - 모여라 (WeMeet)</title>
   <meta name="description" content="친구와 일주일 스케줄(점심, 저녁, 조깅)을 공유하고 비고 메모 및 만날 수 있는 날짜를 직관적으로 확인하는 주간 약속 조율 서비스">
+  <meta name="robots" content="noindex, nofollow">
   <!-- Pretendard Web Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- Font Awesome Icons -->
@@ -449,6 +450,48 @@
       </div>
       <div class="modal-footer">
         <button id="btn-matrix-ok" class="modal-confirm-btn">확인했습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔒 4자리 비밀번호 프라이빗 잠금 게이트웨이 -->
+  <div id="password-gate-overlay" class="password-gate-overlay">
+    <div class="gate-card">
+      <div class="gate-lock-icon">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div class="gate-badge">PRIVATE ROOM</div>
+      <h2 class="gate-title">친구 전용 프라이빗 룸</h2>
+      <p class="gate-desc">
+        이곳은 비공개 약속 공간입니다.<br>
+        공유받은 <strong>4자리 비밀번호</strong>를 입력해 주세요.
+      </p>
+
+      <form id="gate-pin-form" class="gate-form" onsubmit="return false;">
+        <div class="gate-input-wrapper">
+          <i class="fa-solid fa-key gate-key-icon"></i>
+          <input 
+            type="password" 
+            id="gate-pin-input" 
+            class="gate-pin-input" 
+            inputmode="numeric" 
+            pattern="[0-9]*" 
+            maxlength="4" 
+            placeholder="비밀번호 4자리" 
+            autocomplete="off" 
+            autofocus 
+          />
+        </div>
+        <div id="gate-error-msg" class="gate-error-msg"></div>
+        <button type="submit" id="btn-gate-unlock" class="gate-unlock-btn">
+          <span>입장하기</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <div class="gate-footer-hint">
+        <i class="fa-regular fa-circle-question"></i>
+        <span>비밀번호를 모르시면 주최자에게 문의해 주세요.</span>
       </div>
     </div>
   </div>
