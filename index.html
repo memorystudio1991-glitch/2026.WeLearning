@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOT! TREND - 카테고리별 추천 광고상품</title>
+  <meta name="description" content="카테고리별 인기 추천 상품 큐레이션 및 외부 쇼핑몰 바로가기 사이트">
+  <!-- Pretendard Web Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 최상단 유틸리티 배너/안내 바 -->
+  <header class="top-nav-bar">
+    <div class="top-nav-inner">
+      <div class="top-brand">
+        <i class="fa-solid fa-bolt brand-icon"></i>
+        <span>TREND CURATION HUB</span>
+      </div>
+      <div class="top-actions">
+        <button id="guide-modal-btn" class="guide-trigger-btn" title="외부 사이트 연결 링크 수정 방법 안내">
+          <i class="fa-solid fa-gear"></i> 링크 수정 방법 가이드
+        </button>
+        <div class="notice-badge">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> 클릭 시 지정 외부 사이트로 이동
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 컨테이너 -->
+  <main class="page-container">
+    
+    <!-- 섹션 헤더 타이틀 -->
+    <section class="section-header">
+      <h2 class="sub-title">HOT! TREND</h2>
+      <h1 class="main-title">
+        카테고리별 <span class="highlight-blue">추천 광고상품</span>
+      </h1>
+    </section>
+
+    <!-- 카테고리 리스트 컨테이너 (products.js 기반 자동 렌더링) -->
+    <div id="categories-container" class="categories-container">
+      <!-- JavaScript로 여성패션, 남성패션 등이 동적 생성됩니다 -->
+    </div>
+
+  </main>
+
+  <!-- 하단 푸터 -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="#none">회사소개</a>
+        <span>|</span>
+        <a href="#none">이용약관</a>
+        <span>|</span>
+        <a href="#none">개인정보처리방침</a>
+        <span>|</span>
+        <a href="#none">제휴/광고 문의</a>
+      </div>
+      <p class="disclaimer">
+        * 본 사이트의 상품 및 프로모션 배너를 클릭하시면 해당 상품의 판매 페이지 또는 제휴 사이트(쿠팡 등)로 새 창 연결됩니다.<br>
+        * 본 페이지는 제휴 마케팅 및 상품 큐레이션 목적으로 제작된 페이지입니다.
+      </p>
+      <p class="copyright">© 2026 Trend Curation Hub. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- 플로팅 상단 이동 버튼 -->
+  <button id="scroll-top-btn" class="floating-top-btn" aria-label="맨 위로 이동" title="맨 위로">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- 링크 수정 가이드 모달 -->
+  <div id="guide-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-link modal-icon"></i>
+          <h3>외부 사이트 연결 링크 수정 방법</h3>
+        </div>
+        <button id="close-modal-btn" class="close-modal-btn" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-step">
+          <span class="step-num">1</span>
+          <div>
+            <strong><code>products.js</code> 파일을 메모장이나 VSCode로 엽니다.</strong>
+            <p>프로젝트 폴더 내 <code>products.js</code> 파일에 모든 상품 정보가 모여 있습니다.</p>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">2</span>
+          <div>
+            <strong><code>targetUrl</code>에 연결하고 싶은 링크를 입력합니다.</strong>
+            <pre class="code-box"><code>{
+  id: "w-1",
+  title: "리데일리 남여공용 30수 라운드넥 반팔 티셔츠",
+  price: "5,890원",
+  image: "images/w_yellow_tshirt.jpg",
+  targetUrl: "https://이동할_사이트_주소.com" // 👈 여기를 변경!
+}</code></pre>
+          </div>
+        </div>
+        <div class="guide-step">
+          <span class="step-num">3</span>
+          <div>
+            <strong>저장하면 즉시 클릭 시 변경된 사이트로 연결됩니다!</strong>
+            <p>모든 링크는 새 창(새 탭)에서 안전하게 열립니다.</p>
+          </div>
+        </div>
+
+        <div class="test-links-preview">
+          <h4>현재 연결된 상품 링크 바로 테스트</h4>
+          <div id="current-links-list" class="links-preview-list">
+            <!-- JavaScript로 현재 링크 목록 렌더링 -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-ok-btn" class="modal-action-btn">확인했습니다</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 아울렛 브랜드 세일 특별 기획전 모달 창 -->
+  <div id="outlet-sale-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-content outlet-modal-content">
+      <!-- 팝업 헤더 -->
+      <div class="outlet-modal-header" id="outlet-modal-header">
+        <div class="outlet-badge-tag" id="outlet-badge-tag">OUTLET SPECIAL</div>
+        <button id="close-outlet-modal-btn" class="close-modal-btn" aria-label="닫기">&times;</button>
+      </div>
+
+      <div class="outlet-modal-body">
+        <!-- 타이틀 & 안내 -->
+        <div class="outlet-title-area">
+          <h2 class="outlet-main-title" id="outlet-main-title">아울렛 브랜드 세일 ~50%</h2>
+          <p class="outlet-sub-title" id="outlet-sub-title">단, 7일간 진행되는 시즌오프 프리미엄 브랜드 특별 기획전!</p>
+        </div>
+
+        <!-- 실시간 카운트다운 타이머 -->
+        <div class="outlet-timer-bar">
+          <div class="timer-label"><i class="fa-regular fa-clock"></i> 세일 마감까지 남은 시간</div>
+          <div class="timer-countdown" id="outlet-countdown">
+            <span class="time-box" id="timer-days">06</span>일 
+            <span class="time-box" id="timer-hours">18</span>:
+            <span class="time-box" id="timer-mins">45</span>:
+            <span class="time-box" id="timer-secs">20</span>
+          </div>
+        </div>
+
+        <!-- 할인 쿠폰 배너 -->
+        <div class="outlet-coupon-banner" id="outlet-coupon-banner">
+          <div class="coupon-left">
+            <i class="fa-solid fa-ticket coupon-icon"></i>
+            <span id="outlet-coupon-text">선착순 15% 추가할인 쿠폰 받기</span>
+          </div>
+          <button class="coupon-claim-btn" id="coupon-claim-btn">쿠폰 다운로드</button>
+        </div>
+
+        <!-- 기획전 특가 상품 리스트 -->
+        <div class="outlet-items-section">
+          <h3 class="outlet-section-heading">🔥 오늘의 아울렛 단독 특가 상품</h3>
+          <div class="outlet-items-grid" id="outlet-items-grid">
+            <!-- JavaScript로 동적 렌더링 -->
+          </div>
+        </div>
+
+        <!-- 공식 기획전 전체보기 버튼 -->
+        <div class="outlet-bottom-cta">
+          <a href="#" id="outlet-all-link" target="_blank" rel="noopener noreferrer" class="outlet-all-btn">
+            공식 아울렛 기획전 전체 상품 보러가기 <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 (클릭 시 이동 안내) -->
+  <div id="toast-message" class="toast-message"></div>
+
+  <!-- 스크립트 로드 -->
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
