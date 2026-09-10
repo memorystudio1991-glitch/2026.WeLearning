@@ -1,0 +1,1040 @@
+/* ==========================================================================
+   WeMeet - 친구와 함께하는 주간 일정 조율 앱 스타일시트 (schedule.css)
+   ========================================================================== */
+
+:root {
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Noto Sans KR', sans-serif;
+  
+  /* 테마 컬러: 딥 포레스트 그린 & 세이지 그린 */
+  --primary-deep: #1b4d3e;
+  --primary-green: #23664d;
+  --primary-light: #e8f5ef;
+  --primary-border: #d1e9db;
+  --primary-accent: #2e7d32;
+
+  --bg-app: #f7faf8;
+  --bg-sidebar: #f0f4f1;
+  --bg-card: #ffffff;
+  
+  --text-main: #141c17;
+  --text-muted: #5e6d64;
+  --text-sub: #829288;
+  
+  --border-light: #e4ece6;
+  --border-dark: #cbd9ce;
+  
+  --tag-orange: #ea580c;
+  --tag-orange-bg: #fef3c7;
+  --gold-glow: #eab308;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 8px 24px rgba(27, 77, 62, 0.08);
+
+  --transition-fast: 0.18s ease-in-out;
+  --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+button, select {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* ==========================================================================
+   App Overall Layout (2 Columns)
+   ========================================================================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   Left Sidebar
+   ========================================================================== */
+.sidebar {
+  width: 250px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border-light);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Brand Logo */
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.brand-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: var(--primary-deep);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(27, 77, 62, 0.2);
+}
+
+.brand-name {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.brand-subname {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-green);
+}
+
+.brand-tagline {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* User / Friend Selector */
+.user-role-badge {
+  background-color: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  color: var(--primary-deep);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.role-select-wrap {
+  flex: 1;
+}
+
+.user-select-dropdown {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-deep);
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Nav Menu */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.nav-item i {
+  font-size: 15px;
+  width: 18px;
+  text-align: center;
+}
+
+.nav-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background-color: var(--primary-light);
+  color: var(--primary-deep);
+  font-weight: 800;
+}
+
+.nav-item.active i {
+  color: var(--primary-green);
+}
+
+.nav-badge-pill {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  background-color: var(--primary-green);
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+/* Sidebar Tip Card */
+.sidebar-tip-card {
+  background-color: #fef9ee;
+  border: 1px solid #faeed0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.tip-icon-wrap {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: #fef3c7;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.tip-content strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.tip-content p {
+  font-size: 11px;
+  color: #78350f;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+/* Sidebar Profile Footer */
+.sidebar-profile-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 10px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--primary-deep);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-desc {
+  font-size: 10px;
+  color: var(--text-sub);
+}
+
+.profile-action-btn {
+  color: var(--text-sub);
+  font-size: 13px;
+  padding: 4px;
+  transition: color var(--transition-fast);
+}
+
+.profile-action-btn:hover {
+  color: var(--primary-deep);
+}
+
+/* ==========================================================================
+   Main Content Area
+   ========================================================================== */
+.main-content {
+  flex: 1;
+  padding: 36px 48px;
+  max-width: 1060px;
+  min-width: 0;
+}
+
+/* Page Top Bar */
+.page-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.sub-category-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary-green);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.page-main-title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+  color: var(--text-main);
+  margin-top: 2px;
+}
+
+.page-sub-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.top-action-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.top-action-btn {
+  background-color: #ffffff;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.top-action-btn:hover {
+  background-color: #f3f7f4;
+  border-color: var(--primary-green);
+}
+
+.top-action-btn.primary {
+  background-color: var(--primary-deep);
+  color: #ffffff;
+  border-color: var(--primary-deep);
+}
+
+.top-action-btn.primary:hover {
+  background-color: #133a2e;
+}
+
+/* ==========================================================================
+   Hero Deep Green Summary Banner (첨부 이미지 스타일)
+   ========================================================================== */
+.hero-summary-card {
+  background-color: var(--primary-deep);
+  border-radius: 16px;
+  padding: 22px 28px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(27, 77, 62, 0.15);
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.summary-icon-box {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #a7f3d0;
+  flex-shrink: 0;
+}
+
+.summary-small-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9fe3c5;
+}
+
+.summary-highlight-title {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin: 2px 0;
+}
+
+.summary-status-sub {
+  font-size: 12px;
+  color: #d1fae5;
+  font-weight: 500;
+}
+
+.summary-right {
+  text-align: right;
+}
+
+.summary-tag-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #a7f3d0;
+  margin-bottom: 3px;
+}
+
+.summary-tag-desc {
+  font-size: 11px;
+  color: #d1fae5;
+  opacity: 0.9;
+}
+
+/* Friends Status Strip */
+.friends-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.strip-label {
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.friends-chips-list {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.friend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.friend-chip.active {
+  background-color: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary-deep);
+  font-weight: 800;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.view-matrix-btn {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-green);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-fast);
+}
+
+.view-matrix-btn:hover {
+  background-color: var(--primary-light);
+  border-color: var(--primary-border);
+}
+
+/* ==========================================================================
+   Schedule Table Card (첨부 이미지 100% 동일 구현)
+   ========================================================================== */
+.schedule-table-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.table-header-row {
+  display: flex;
+  padding: 14px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+
+.col-date-header {
+  width: 170px;
+  flex-shrink: 0;
+}
+
+.col-slots-header {
+  flex: 1;
+}
+
+/* Row Item */
+.schedule-row {
+  display: flex;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f0f4f1;
+  transition: background-color var(--transition-fast);
+}
+
+.schedule-row:last-child {
+  border-bottom: none;
+}
+
+.schedule-row:hover {
+  background-color: #fbfdfc;
+}
+
+/* Golden Best Match Day Row Highlight */
+.schedule-row.all-match-day {
+  background-color: rgba(35, 102, 77, 0.03);
+}
+
+/* Date Info Column */
+.date-col {
+  width: 170px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.date-text {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-main);
+}
+
+.schedule-row.weekend .date-text {
+  color: var(--primary-green);
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background-color: var(--primary-light);
+  color: var(--primary-deep);
+}
+
+.status-badge.weekend-tag {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Time Slots Column */
+.slots-col {
+  flex: 1;
+  display: flex;
+  gap: 36px;
+  align-items: center;
+}
+
+.slot-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  max-width: 290px;
+}
+
+.slot-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.confirm-alert-badge {
+  background-color: var(--tag-orange-bg);
+  color: var(--tag-orange);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Segmented Control Buttons (첨부 이미지의 [ ✓ 이용 ] [ 안 함 ] 구조) */
+.segmented-control {
+  display: flex;
+  background-color: #f1f4f2;
+  border: 1px solid #dfe5e1;
+  border-radius: 10px;
+  padding: 3px;
+  position: relative;
+  gap: 2px;
+}
+
+.segment-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.segment-btn:hover {
+  color: var(--text-main);
+}
+
+/* 선택 활성화 상태 */
+.segment-btn.active.available {
+  background-color: #ffffff;
+  color: var(--primary-deep);
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid #d4ded6;
+}
+
+.segment-btn.active.available i {
+  color: var(--primary-green);
+}
+
+.segment-btn.active.busy {
+  background-color: #ffffff;
+  color: #64748b;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid #cbd5e1;
+}
+
+/* Slot Friends Status Indicator */
+.slot-friends-status {
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding-left: 2px;
+}
+
+.slot-friends-status.all-ok {
+  color: var(--primary-green);
+}
+
+.slot-friends-status.partial {
+  color: #d97706;
+}
+
+.slot-friends-status.none {
+  color: var(--text-sub);
+}
+
+/* ==========================================================================
+   Bottom Quick Action Card (첨부 이미지 하단 영역 스타일)
+   ========================================================================== */
+.bottom-quick-card {
+  background-color: #faf7f0;
+  border: 1px solid #f3ece0;
+  border-radius: 14px;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.quick-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.quick-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #f3ece0;
+  color: #855c2f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.quick-text-box strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #453423;
+}
+
+.quick-text-box p {
+  font-size: 12px;
+  color: #735d46;
+  margin-top: 2px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.quick-action-btn {
+  background-color: #ffffff;
+  border: 1px solid #e8decb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5c442d;
+  transition: all var(--transition-fast);
+}
+
+.quick-action-btn:hover {
+  background-color: #f4ecdc;
+}
+
+.quick-action-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: #855c2f;
+}
+
+.quick-action-btn.ghost:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================================
+   Modal for Friend Matrix Comparison
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-fast);
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  max-width: 680px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: modalSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlide {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fafcfb;
+}
+
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.modal-icon {
+  color: var(--primary-green);
+  font-size: 18px;
+}
+
+.close-btn {
+  font-size: 22px;
+  color: var(--text-sub);
+  transition: color var(--transition-fast);
+}
+
+.close-btn:hover {
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.matrix-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: center;
+}
+
+.matrix-table th {
+  background-color: #f1f5f2;
+  padding: 10px 8px;
+  font-weight: 800;
+  color: var(--text-main);
+  border-bottom: 2px solid var(--border-dark);
+}
+
+.matrix-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.cell-ok {
+  background-color: #ecfdf5;
+  color: #065f46;
+  font-weight: 800;
+  border-radius: 4px;
+}
+
+.cell-busy {
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.cell-golden {
+  background-color: #d1fae5;
+  color: #047857;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 1px #10b981;
+}
+
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-light);
+  text-align: right;
+  background-color: #fafcfb;
+}
+
+.modal-confirm-btn {
+  background-color: var(--primary-deep);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: opacity var(--transition-fast);
+}
+
+.modal-confirm-btn:hover {
+  opacity: 0.9;
+}
+
+/* ==========================================================================
+   Toast Feedback
+   ========================================================================== */
+.toast-message {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(40px);
+  background-color: rgba(20, 28, 23, 0.92);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  padding: 11px 22px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2000;
+}
+
+.toast-message.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 992px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    padding: 16px;
+  }
+  .sidebar-tip-card {
+    display: none;
+  }
+  .main-content {
+    padding: 24px 16px;
+  }
+  .slots-col {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 680px) {
+  .page-top-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .hero-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+  }
+  .summary-right {
+    text-align: left;
+  }
+  .schedule-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .date-col {
+    width: 100%;
+  }
+  .slots-col {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .slot-block {
+    max-width: 100%;
+  }
+  .bottom-quick-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .quick-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+}
