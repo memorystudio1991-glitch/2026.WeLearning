@@ -14,12 +14,31 @@
 </head>
 <body>
 
+  <!-- 📱 모바일 전용 상단 헤더바 (아이폰/갤럭시 등 768px 이하에서만 표시) -->
+  <header class="mobile-header">
+    <button id="btn-mobile-menu" class="mobile-icon-btn" aria-label="사이드바 메뉴 열기" title="사이드바 메뉴 열기">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="mobile-brand">
+      <i class="fa-solid fa-calendar-check mobile-brand-icon"></i>
+      <span class="mobile-brand-title">모여라 <strong>WeMeet</strong></span>
+    </div>
+    <div class="mobile-header-actions">
+      <button id="btn-mobile-share" class="mobile-icon-btn" aria-label="초대 링크 복사" title="초대 링크 복사">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 📱 모바일 사이드바 배경 어두운 오버레이 (클릭 시 닫힘) -->
+  <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
+
   <div class="app-layout">
     
-    <!-- 좌측 사이드바 (Sidebar) -->
-    <aside class="sidebar">
+    <!-- 좌측 사이드바 (Sidebar) - 모바일에서는 슬라이드 드로어 형태로 동작 -->
+    <aside class="sidebar" id="app-sidebar">
       
-      <!-- 서비스 브랜드 로고 -->
+      <!-- 서비스 브랜드 로고 및 모바일 닫기 버튼 -->
       <div class="brand-header">
         <div class="brand-icon-wrap">
           <i class="fa-solid fa-calendar-check brand-logo-icon"></i>
@@ -28,6 +47,9 @@
           <h1 class="brand-name">모여라 <span class="brand-subname">WeMeet</span></h1>
           <p class="brand-tagline">친구와 함께하는 약속 & 조깅 조율</p>
         </div>
+        <button id="btn-close-sidebar" class="sidebar-close-btn" aria-label="사이드바 닫기" title="닫기">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
 
       <!-- 프로필 / 친구 시점 전환 버튼 -->
@@ -498,6 +520,30 @@
 
   <!-- 토스트 알림창 -->
   <div id="toast-message" class="toast-message"></div>
+
+  <!-- 📱 모바일 전용 하단 고정 탭바 (아이폰/갤럭시 등 엄지손가락으로 탭하기 편한 하단 메뉴) -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="모바일 네비게이션 메뉴">
+    <button class="bottom-nav-item" id="bottom-nav-home" data-view="home">
+      <i class="fa-solid fa-house-chimney"></i>
+      <span>홈</span>
+    </button>
+    <button class="bottom-nav-item active" id="bottom-nav-schedule" data-view="schedule" data-week="current">
+      <i class="fa-solid fa-calendar-week"></i>
+      <span>이번 주</span>
+    </button>
+    <button class="bottom-nav-item" id="bottom-nav-next-week" data-view="schedule" data-week="next">
+      <i class="fa-solid fa-calendar-plus"></i>
+      <span>다음 주</span>
+    </button>
+    <button class="bottom-nav-item" id="bottom-nav-matrix" data-action="matrix">
+      <i class="fa-solid fa-table-columns"></i>
+      <span>전체 비교</span>
+    </button>
+    <button class="bottom-nav-item" id="bottom-nav-menu" data-action="menu">
+      <i class="fa-solid fa-bars"></i>
+      <span>메뉴</span>
+    </button>
+  </nav>
 
   <!-- 스크립트 로드 -->
   <script src="app.js"></script>

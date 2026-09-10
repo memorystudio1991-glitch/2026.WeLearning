@@ -1251,6 +1251,81 @@ function setupEventListeners() {
       }
     });
   }
+
+  // 13. 📱 모바일 사이드바 드로어(Drawer) 및 하단 탭바 인터랙션 설정
+  const btnMobileMenu = document.getElementById('btn-mobile-menu');
+  const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const appSidebar = document.getElementById('app-sidebar');
+  const btnMobileShare = document.getElementById('btn-mobile-share');
+
+  // 사이드바 열기 함수
+  const openMobileSidebar = () => {
+    if (appSidebar) appSidebar.classList.add('mobile-open');
+    if (sidebarOverlay) sidebarOverlay.classList.add('active');
+  };
+
+  // 사이드바 닫기 함수
+  const closeMobileSidebar = () => {
+    if (appSidebar) appSidebar.classList.remove('mobile-open');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+  };
+
+  if (btnMobileMenu) btnMobileMenu.addEventListener('click', openMobileSidebar);
+  if (btnCloseSidebar) btnCloseSidebar.addEventListener('click', closeMobileSidebar);
+  if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+  // 사이드바 메뉴 항목 클릭 시 모바일에서는 자동으로 드로어 닫기
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        closeMobileSidebar();
+      }
+    });
+  });
+
+  // 모바일 상단 공유 버튼 클릭 시 링크 복사
+  if (btnMobileShare) {
+    btnMobileShare.addEventListener('click', () => {
+      const shareUrl = window.location.href;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('🔗 약속 조율 초대 링크가 복사되었습니다!');
+      }).catch(() => {
+        showToast('🔗 초대 링크: ' + shareUrl);
+      });
+    });
+  }
+
+  // 모바일 하단 네비게이션 탭바 클릭 이벤트
+  const bottomHome = document.getElementById('bottom-nav-home');
+  const bottomSchedule = document.getElementById('bottom-nav-schedule');
+  const bottomNextWeek = document.getElementById('bottom-nav-next-week');
+  const bottomMatrix = document.getElementById('bottom-nav-matrix');
+  const bottomMenu = document.getElementById('bottom-nav-menu');
+
+  if (bottomHome) {
+    bottomHome.addEventListener('click', () => {
+      switchView('home');
+    });
+  }
+  if (bottomSchedule) {
+    bottomSchedule.addEventListener('click', () => {
+      switchWeek('current');
+      switchView('schedule');
+    });
+  }
+  if (bottomNextWeek) {
+    bottomNextWeek.addEventListener('click', () => {
+      switchWeek('next');
+      switchView('schedule');
+    });
+  }
+  if (bottomMatrix) {
+    bottomMatrix.addEventListener('click', openMatrix);
+  }
+  if (bottomMenu) {
+    bottomMenu.addEventListener('click', openMobileSidebar);
+  }
 }
 
 /**
@@ -1413,6 +1488,7 @@ function switchWeek(weekKey) {
   renderScheduleRows();
   updateMatchingResults();
   renderHomeDashboard();
+  updateMobileBottomNav();
 
   showToast(`📅 [${config.title}] 화면으로 전환되었습니다. (${config.dateRange})`);
 }
@@ -1442,6 +1518,7 @@ function switchView(viewName) {
     if (navHome) navHome.classList.add('active');
 
     renderHomeDashboard();
+    updateMobileBottomNav();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     if (viewHome) {
@@ -1462,7 +1539,33 @@ function switchView(viewName) {
     }
 
     renderScheduleRows();
+    updateMobileBottomNav();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+/**
+ * 📱 모바일 하단 고정 탭바(Bottom Navigation) 활성 상태 동기화 함수
+ */
+function updateMobileBottomNav() {
+  const tabHome = document.getElementById('bottom-nav-home');
+  const tabSchedule = document.getElementById('bottom-nav-schedule');
+  const tabNextWeek = document.getElementById('bottom-nav-next-week');
+
+  if (!tabHome || !tabSchedule || !tabNextWeek) return;
+
+  tabHome.classList.remove('active');
+  tabSchedule.classList.remove('active');
+  tabNextWeek.classList.remove('active');
+
+  if (currentView === 'home') {
+    tabHome.classList.add('active');
+  } else {
+    if (currentWeek === 'current') {
+      tabSchedule.classList.add('active');
+    } else {
+      tabNextWeek.classList.add('active');
+    }
   }
 }
 

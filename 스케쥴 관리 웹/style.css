@@ -2507,3 +2507,571 @@ button {
   justify-content: center;
   gap: 5px;
 }
+
+/* ==========================================================================
+   📱 모바일 전용 반응형 스타일 (Mobile Responsive Web for iPhone & Galaxy)
+   ========================================================================== */
+
+/* 1단계: 데스크톱 화면(기본)에서는 모바일 전용 UI 요소를 완벽히 숨김 */
+.mobile-header,
+.sidebar-overlay,
+.sidebar-close-btn,
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* 2단계: 스마트폰 및 태블릿 화면 (최대 768px 이하 모바일 전용 레이아웃) */
+@media screen and (max-width: 768px) {
+
+  /* --- [A] 상단 모바일 앱바 (App Bar) --- */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-main);
+    background-color: #f3f7f4;
+    border: 1px solid var(--border-light);
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-icon-btn:active {
+    transform: scale(0.92);
+    background-color: var(--primary-light);
+    color: var(--primary-deep);
+  }
+
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+
+  .mobile-brand-icon {
+    font-size: 18px;
+    color: var(--primary-deep);
+  }
+
+  .mobile-brand strong {
+    color: var(--primary-green);
+    font-weight: 900;
+  }
+
+  /* --- [B] 사이드바: 슬라이드 오프캔버스 드로어(Drawer)로 전환 --- */
+  .app-layout {
+    display: block; /* 모바일에서 2컬럼 flex 해제 */
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 290px;
+    max-width: 85vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 1050;
+    background-color: #ffffff;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 6px 0 24px rgba(0, 0, 0, 0.15);
+    padding: 20px 16px 80px 16px;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* 어두운 배경 오버레이 */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease-in-out;
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 모바일 사이드바 닫기(X) 버튼 */
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    color: var(--text-muted);
+    background-color: var(--bg-sidebar);
+    margin-left: auto;
+    transition: all var(--transition-fast);
+  }
+
+  .sidebar-close-btn:active {
+    background-color: #fee2e2;
+    color: #ef4444;
+  }
+
+  /* --- [C] 모바일 하단 네이티브 탭바 (Bottom Navigation Bar) --- */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-light);
+    z-index: 950;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-sub);
+    font-size: 10.5px;
+    font-weight: 700;
+    transition: all var(--transition-fast);
+    padding: 6px 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-item i {
+    font-size: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--primary-deep);
+    font-weight: 800;
+  }
+
+  .bottom-nav-item.active i {
+    color: var(--primary-green);
+    transform: translateY(-2px);
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.92);
+  }
+
+  /* --- [D] 메인 콘텐츠 영역 여백 최적화 --- */
+  .main-content {
+    padding: 16px 14px 85px 14px; /* 하단 탭바 가림 방지 패딩 */
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* --- [E] 페이지 상단 헤더 & 주차 버튼 --- */
+  .page-top-bar {
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .page-main-title {
+    font-size: 20px;
+    letter-spacing: -0.5px;
+  }
+
+  .page-sub-desc {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .top-action-group {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .week-pill-switch {
+    width: 100%;
+    display: flex;
+  }
+
+  .week-switch-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+
+  .top-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  /* --- [F] 히어로 요약 배너 (오늘식당 감성 배너) --- */
+  .hero-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 18px;
+    gap: 12px;
+    border-radius: 14px;
+    margin-bottom: 14px;
+  }
+
+  .summary-left {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .summary-icon-box {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  .summary-highlight-title {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .summary-right {
+    text-align: left;
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .summary-tag-desc {
+    font-size: 11px;
+  }
+
+  /* --- [G] 참여 멤버 현황 스트립 --- */
+  .friends-status-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    background-color: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+  }
+
+  .friends-chips-list {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .friends-right-actions {
+    width: 100%;
+    margin-left: 0;
+    display: flex;
+    gap: 8px;
+  }
+
+  .reset-strip-btn,
+  .view-matrix-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 6px;
+    font-size: 11.5px;
+  }
+
+  /* --- [H] 스케줄 테이블: 모바일 세로 카드형(Card Layout)으로 전환 [핵심] --- */
+  .schedule-table-card {
+    border-radius: 14px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    margin-bottom: 16px;
+  }
+
+  /* 데스크톱용 가로 헤더 숨김 */
+  .table-header-row.split-header-row {
+    display: none !important;
+  }
+
+  /* 각 날짜 행을 모바일 카드 형태로 전환 */
+  .schedule-row.split-row {
+    min-width: unset !important;
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .schedule-row.split-row.today-row {
+    border: 2px solid #10b981;
+    background: #fbfdfc !important;
+  }
+
+  /* 날짜 헤더 가로바 */
+  .split-row .date-col {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--border-light);
+    padding-top: 0;
+  }
+
+  .date-header-badge-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .date-text {
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  /* 좌/우 컨테이너를 세로 스택(위: 나, 아래: 친구)으로 배치 */
+  .split-content-container {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* 나 / 친구 페인 */
+  .split-user-pane {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .split-user-pane.me-pane {
+    border-left: 3.5px solid #10b981;
+  }
+
+  .split-user-pane.friend-pane {
+    border-right: none;
+    border-left: 3.5px solid #0284c7;
+  }
+
+  /* 중앙 매칭 뱃지 (가로 구분선 형태로 변환) */
+  .split-center-divider {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: center;
+    margin: -2px 0;
+  }
+
+  .match-icon-badge {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+
+  /* 3슬롯 그리드 */
+  .user-slots-grid {
+    gap: 6px;
+  }
+
+  .slot-mini-block {
+    padding: 6px 4px;
+  }
+
+  .slot-mini-title {
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+
+  /* 터치 친화적 버튼 높이 */
+  .segmented-control {
+    padding: 2px;
+  }
+
+  .segment-btn {
+    padding: 8px 2px;
+    font-size: 11px;
+    min-height: 34px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pane-memo-input {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  /* 하단 일괄 설정 카드 */
+  .bottom-quick-card {
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .quick-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .quick-action-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  /* --- [I] 홈 라운지 & 대시보드 모바일 최적화 --- */
+  .home-dday-card {
+    padding: 16px;
+  }
+
+  .dday-content-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .dday-title {
+    font-size: 17px;
+  }
+
+  .dday-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .home-widgets-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .chemistry-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .stat-box {
+    padding: 12px 8px;
+  }
+
+  .wishlist-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .wishlist-add-form {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wishlist-type-select,
+  .wishlist-input,
+  .wishlist-add-btn {
+    width: 100%;
+  }
+
+  .wishlist-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .wishlist-filter-pills {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .wishlist-search-box {
+    width: 100%;
+  }
+
+  .wishlist-items-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* --- [J] 모달 팝업 & 비밀번호 게이트웨이 --- */
+  .modal-card {
+    width: calc(100% - 24px) !important;
+    max-width: 440px !important;
+    margin: 16px auto !important;
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .matrix-modal-card {
+    max-width: 95vw !important;
+  }
+
+  .gate-card {
+    width: calc(100% - 32px) !important;
+    padding: 24px 18px !important;
+  }
+}
+
+/* 3단계: 초소형 모바일 기기 (폭 380px 이하) 추가 미세 조정 */
+@media screen and (max-width: 380px) {
+  .user-slots-grid {
+    grid-template-columns: 1fr; /* 1열로 변환하여 텍스트 깨짐 방지 */
+    gap: 6px;
+  }
+
+  .slot-mini-block {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+  }
+
+  .slot-mini-title {
+    margin-bottom: 0;
+  }
+
+  .segmented-control {
+    max-width: 140px;
+  }
+}
+

@@ -14,3 +14,5 @@ test-results/
 1.교육자료/2.심화교육자료/
 **/config.js
 2026.WeLearning/
+*.bak
+
