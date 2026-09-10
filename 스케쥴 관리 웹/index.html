@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>이번 주 약속 조율 - 모여라 (WeMeet)</title>
-  <meta name="description" content="친구와 일주일 스케줄을 공유하고 만날 수 있는 날짜를 직관적으로 확인하는 주간 약속 조율 서비스">
+  <meta name="description" content="친구와 일주일 스케줄(점심, 저녁, 조깅)을 공유하고 비고 메모 및 만날 수 있는 날짜를 직관적으로 확인하는 주간 약속 조율 서비스">
   <!-- Pretendard Web Font -->
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <!-- Font Awesome Icons -->
@@ -25,7 +25,7 @@
         </div>
         <div class="brand-text-wrap">
           <h1 class="brand-name">모여라 <span class="brand-subname">WeMeet</span></h1>
-          <p class="brand-tagline">친구와 함께하는 약속 조율</p>
+          <p class="brand-tagline">친구와 함께하는 약속 & 조깅 조율</p>
         </div>
       </div>
 
@@ -34,10 +34,7 @@
         <i class="fa-solid fa-user-group"></i>
         <div class="role-select-wrap">
           <select id="user-switcher" class="user-select-dropdown" aria-label="일정 작성자 선택">
-            <option value="me" selected>👤 김건영 (나)</option>
-            <option value="friend1">👤 박민수</option>
-            <option value="friend2">👤 이지은</option>
-            <option value="friend3">👤 최현우</option>
+            <!-- JS로 동적 생성 (기본 2명 + 추가된 친구) -->
           </select>
         </div>
       </div>
@@ -50,13 +47,17 @@
         </a>
         <a href="#none" class="nav-item active">
           <i class="fa-solid fa-calendar-week"></i>
-          <span>이번 주</span>
+          <span>이번 주 일정</span>
         </a>
         <a href="#none" class="nav-item" id="nav-match-result">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
           <span>만남 추천</span>
-          <span class="nav-badge-pill" id="match-count-badge">2일 추천</span>
+          <span class="nav-badge-pill" id="match-count-badge">계산 중</span>
         </a>
+        <button id="btn-add-friend-sidebar" class="nav-item add-friend-nav-btn">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>친구 추가하기</span>
+        </button>
         <a href="../index.html" class="nav-item" title="쇼핑몰 사이트로 이동">
           <i class="fa-solid fa-bag-shopping"></i>
           <span>추천 쇼핑몰</span>
@@ -73,8 +74,8 @@
           <i class="fa-solid fa-lightbulb"></i>
         </div>
         <div class="tip-content">
-          <strong>필요할 때만 알려주세요.</strong>
-          <p>바쁜 날만 체크하면 친구들과 모두 만날 수 있는 날이 자동으로 계산돼요.</p>
+          <strong>점심 · 저녁 · 조깅 매칭</strong>
+          <p>시간대별 가능 여부와 비고 메모를 적으면 만날 수 있는 날이 자동으로 계산돼요.</p>
         </div>
       </div>
 
@@ -83,7 +84,7 @@
         <div class="profile-avatar" id="current-user-avatar">김</div>
         <div class="profile-info">
           <div class="profile-name" id="current-user-name">김건영</div>
-          <div class="profile-desc">친구 3명과 공유 중</div>
+          <div class="profile-desc" id="current-user-role-desc">나 (작성 중)</div>
         </div>
         <button class="profile-action-btn" id="btn-share-profile" title="초대 링크 복사">
           <i class="fa-solid fa-arrow-up-right-from-square"></i>
@@ -98,13 +99,13 @@
       <!-- 상단 타이틀 및 액션 헤더 -->
       <div class="page-top-bar">
         <div class="title-group">
-          <span class="sub-category-tag">MY WEEK</span>
-          <h2 class="page-main-title">이번 주 약속 조율</h2>
-          <p class="page-sub-desc">나의 일정을 선택하면 친구들과 시간이 겹치는 최적의 만남 날짜를 실시간으로 알려드려요.</p>
+          <span class="sub-category-tag">WEEKLY PLANNER</span>
+          <h2 class="page-main-title">이번 주 약속 & 조깅 조율</h2>
+          <p class="page-sub-desc">점심, 저녁, 조깅 일정을 선택하고 비고란에 메모를 남겨보세요. 둘 다 가능한 최적의 날짜를 실시간으로 찾아드려요.</p>
         </div>
         <div class="top-action-group">
           <button id="btn-reset-default" class="top-action-btn" title="모든 요일 기본값으로 초기화">
-            <i class="fa-solid fa-rotate-right"></i> 기본 설정으로
+            <i class="fa-solid fa-rotate-right"></i> 기본값으로
           </button>
           <button id="btn-copy-invite" class="top-action-btn primary" title="친구에게 내 일정 링크 공유">
             <i class="fa-solid fa-link"></i> 링크로 친구 초대
@@ -119,32 +120,32 @@
             <i class="fa-solid fa-wand-magic-sparkles"></i>
           </div>
           <div class="summary-text-box">
-            <div class="summary-small-label">이번 주 만남 추천</div>
+            <div class="summary-small-label">이번 주 만남 & 운동 추천</div>
             <div class="summary-highlight-title" id="hero-recommend-text">
-              금요일 저녁 · 토요일 점심
+              계산 중입니다...
             </div>
             <div class="summary-status-sub" id="hero-recommend-sub">
-              (친구 3명과 나 모두 가능!)
+              (참여자 전원 시간 일치!)
             </div>
           </div>
         </div>
         <div class="summary-right">
-          <div class="summary-tag-badge">자동 매칭 완료</div>
-          <p class="summary-tag-desc">바뀐 날짜만 직접 선택하면 돼요</p>
+          <div class="summary-tag-badge" id="hero-members-badge">참여자 2명 매칭 중</div>
+          <p class="summary-tag-desc">바뀐 일정만 탭하여 바로 변경하세요</p>
         </div>
       </div>
 
-      <!-- 친구 참여 현황 바 -->
+      <!-- 참여 멤버 현황 바 + 친구 추가 버튼 -->
       <div class="friends-status-strip">
-        <span class="strip-label"><i class="fa-solid fa-user-check"></i> 함께 조율 중인 친구들:</span>
-        <div class="friends-chips-list">
-          <span class="friend-chip active"><span class="chip-dot"></span>나 (김건영)</span>
-          <span class="friend-chip"><span class="chip-dot"></span>박민수 (입력완료)</span>
-          <span class="friend-chip"><span class="chip-dot"></span>이지은 (입력완료)</span>
-          <span class="friend-chip"><span class="chip-dot"></span>최현우 (입력완료)</span>
+        <span class="strip-label"><i class="fa-solid fa-user-check"></i> 참여 멤버:</span>
+        <div class="friends-chips-list" id="friends-chips-container">
+          <!-- JS로 동적 생성 -->
         </div>
+        <button id="btn-add-friend-trigger" class="add-friend-pill-btn" title="새로운 친구 추가하기">
+          <i class="fa-solid fa-plus"></i> 친구 추가
+        </button>
         <button id="btn-view-matrix" class="view-matrix-btn">
-          <i class="fa-solid fa-table-columns"></i> 친구별 전체 일정표 보기
+          <i class="fa-solid fa-table-columns"></i> 전체 일정 비교표 보기
         </button>
       </div>
 
@@ -153,8 +154,8 @@
         
         <!-- 테이블 헤더 -->
         <div class="table-header-row">
-          <div class="col-date-header">날짜와 일정</div>
-          <div class="col-slots-header">시간대별 약속 가능 여부</div>
+          <div class="col-date-header">날짜와 요일</div>
+          <div class="col-slots-header">시간대 / 활동 (점심 · 저녁 · 조깅) &amp; 비고란</div>
         </div>
 
         <!-- 7일간의 일정 행 컨테이너 (JS 동적 렌더링) -->
@@ -168,19 +169,19 @@
       <div class="bottom-quick-card">
         <div class="quick-left">
           <div class="quick-icon-box">
-            <i class="fa-solid fa-business-time"></i>
+            <i class="fa-solid fa-person-running"></i>
           </div>
           <div class="quick-text-box">
-            <strong>이번 주 평일은 모두 바쁘신가요?</strong>
-            <p>야근이나 일정으로 평일이 어려울 땐 한 번에 주말만 가능으로 바꿀 수 있어요.</p>
+            <strong>주말 운동이나 평일 약속을 한 번에 설정할까요?</strong>
+            <p>버튼 하나로 주말 조깅 모드 또는 평일 저녁 모드로 빠르게 바꿀 수 있어요.</p>
           </div>
         </div>
         <div class="quick-actions">
-          <button id="btn-weekend-only" class="quick-action-btn">
-            주말만 가능으로 일괄 설정
+          <button id="btn-weekend-jogging" class="quick-action-btn">
+            🏃 주말 조깅+점심 활성화
           </button>
           <button id="btn-all-available" class="quick-action-btn ghost">
-            모두 가능으로 일괄 설정
+            ✨ 모두 가능으로 일괄 설정
           </button>
         </div>
       </div>
@@ -189,19 +190,45 @@
 
   </div>
 
-  <!-- 전체 친구 일정 비교 모달 창 -->
+  <!-- 👥 새로운 친구 추가 모달 창 -->
+  <div id="add-friend-modal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-card mini-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <i class="fa-solid fa-user-plus modal-icon"></i>
+          <h3>새로운 친구 추가</h3>
+        </div>
+        <button id="btn-close-add-friend" class="close-btn" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-helper-text">
+          함께 스케줄을 조율할 친구의 이름을 입력하세요. (언제든 추가/삭제 가능)
+        </p>
+        <div class="input-form-group">
+          <label for="new-friend-name" class="input-label">친구 이름</label>
+          <input type="text" id="new-friend-name" class="styled-text-input" placeholder="예: 이지은, 최현우" maxlength="10" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-cancel-add-friend" class="modal-cancel-btn">취소</button>
+        <button id="btn-confirm-add-friend" class="modal-confirm-btn">추가하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📊 전체 친구 일정 비교 모달 창 -->
   <div id="matrix-modal" class="modal-overlay" aria-hidden="true">
     <div class="modal-card matrix-modal-card">
       <div class="modal-header">
         <div class="modal-title-wrap">
           <i class="fa-solid fa-users-viewfinder modal-icon"></i>
-          <h3>친구별 일정 비교 & 만남 최적일 매칭</h3>
+          <h3>전체 친구 일정 &amp; 비고 메모 한눈에 비교</h3>
         </div>
         <button id="btn-close-matrix" class="close-btn" aria-label="닫기">&times;</button>
       </div>
       <div class="modal-body">
         <p class="matrix-desc">
-          초록색 뱃지는 모두가 만날 수 있는 <strong>황금 시간대</strong>입니다.
+          초록색 뱃지는 참여자 전원이 가능한 <strong>최적의 시간대</strong>입니다.
         </p>
         <div class="table-responsive">
           <table class="matrix-table" id="matrix-table">
