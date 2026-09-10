@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/schedule", "destination": "/스케쥴 관리 웹/index.html" },
+    { "source": "/schedule/:path*", "destination": "/스케쥴 관리 웹/:path*" },
+    { "source": "/meet", "destination": "/스케쥴 관리 웹/index.html" },
+    { "source": "/wemeet", "destination": "/스케쥴 관리 웹/index.html" }
+  ]
+}
