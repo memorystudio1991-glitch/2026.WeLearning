@@ -16,3 +16,12 @@ test-results/
 2026.WeLearning/
 *.bak
 
+# Python
+venv/
+**/venv/
+__pycache__/
+**/*.pyc
+**/screenshots/
+*.pem
+*.key
+**/qr_code.png

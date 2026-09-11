@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PoseLens AI - 모바일 실시간 인체 스켈레톤</title>
+  <meta name="description" content="스마트폰 카메라를 통해 실시간으로 인체 관절과 스켈레톤을 감지하는 모바일 AI 비전 웹앱">
+  <!-- Pretendard 폰트 & FontAwesome 아이콘 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- MediaPipe Pose 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 메인 뷰포트 컨테이너 -->
+  <div class="camera-wrapper">
+    <!-- 숨겨진 비디오 태그 (카메라 원본 스트림) -->
+    <video id="webcam" playsinline autoplay muted></video>
+    <!-- 화면 렌더링용 캔버스 (스마트폰 전체 화면) -->
+    <canvas id="output-canvas"></canvas>
+
+    <!-- 상단 정보 헤더 (HUD) -->
+    <header class="top-hud">
+      <div class="brand-pill">
+        <i class="fa-solid fa-person-rays"></i>
+        <span>PoseLens AI</span>
+      </div>
+      <div class="status-pill" id="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-text">카메라 준비 중...</span>
+      </div>
+      <div class="fps-pill" id="fps-badge">
+        <span id="fps-value">0</span> FPS
+      </div>
+    </header>
+
+    <!-- 중앙 시작 안내 오버레이 (모바일 자동 재생 정책 대응) -->
+    <div id="start-overlay" class="start-overlay">
+      <div class="start-card">
+        <div class="start-icon">
+          <i class="fa-solid fa-camera-rotate"></i>
+        </div>
+        <h2>스마트폰 카메라로<br>스켈레톤 인식 시작</h2>
+        <p>카메라 권한을 허용하시면 실시간으로 전신 관절과 뼈대를 추적합니다.</p>
+        <button id="btn-start-camera" class="glow-button">
+          <i class="fa-solid fa-play"></i> 카메라 시작하기
+        </button>
+      </div>
+    </div>
+
+    <!-- 로딩 스피너 (인공지능 모델 다운로드 중) -->
+    <div id="model-loader" class="model-loader hidden">
+      <div class="spinner"></div>
+      <p id="loader-text">AI 포즈 모델을 불러오는 중입니다...</p>
+    </div>
+
+    <!-- 하단 모바일 컨트롤 바 -->
+    <nav class="bottom-bar">
+      <!-- 1. 카메라 전환 (전면/후면) -->
+      <button id="btn-switch-camera" class="action-btn" aria-label="카메라 전후면 전환" title="전면/후면 카메라 전환">
+        <i class="fa-solid fa-camera-rotate"></i>
+        <span>전환</span>
+      </button>
+
+      <!-- 2. 사진 캡처 버튼 (메인) -->
+      <button id="btn-capture" class="shutter-btn" aria-label="화면 캡처" title="현재 스켈레톤 사진 저장">
+        <div class="shutter-inner">
+          <i class="fa-solid fa-camera"></i>
+        </div>
+      </button>
+
+      <!-- 3. 모드 전환 (오버레이 / 네온 다크) -->
+      <button id="btn-toggle-mode" class="action-btn" aria-label="뷰 모드 전환" title="오버레이/네온 다크 모드 전환">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span id="mode-text">다크모드</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
