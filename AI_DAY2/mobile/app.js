@@ -1,12 +1,19 @@
 /**
  * ==========================================================================
- *  [AI_DAY2] PoseLens AI - 모바일 실시간 인체 스켈레톤 메인 로직 (app.js)
+ *  [AI_DAY2] PoseLens AI - 모바일 실시간 인체 스켈레톤 & 표정 이모티콘 (app.js)
  * ==========================================================================
  *  - 기능:
  *    1. 스마트폰 카메라(전면/후면) 실시간 비디오 스트림 획득
  *    2. MediaPipe Pose 인공지능을 통한 33개 관절 랜드마크 추출
- *    3. 캔버스 위 실시간 네온 스켈레톤 렌더링 (일반 오버레이 / 다크 모드)
- *    4. 사진 캡처 및 다운로드 기능 제공
+ *    3. 눈/입/코 좌표 기하학적 분석을 통한 실시간 표정(이모티콘) 판별
+ *       - 😄 활짝 웃음 (Smile)
+ *       - 😠 화남 / 찌푸림 (Angry)
+ *       - 😲 놀람 (Surprise)
+ *       - 😉 윙크 (Wink)
+ *       - 😐 무표정 (Neutral)
+ *    4. 머리 위 플로팅 네온 이모티콘 말풍선 렌더링
+ *    5. 캔버스 위 실시간 네온 스켈레톤 시각화 (오버레이 / 다크 모드)
+ *    6. 사진 캡처 및 다운로드 기능 제공
  * ==========================================================================
  */
 
@@ -31,6 +38,11 @@ const statusText = document.getElementById('status-text');
 const fpsValue = document.getElementById('fps-value');
 const modeText = document.getElementById('mode-text');
 
+// 표정 이모티콘 DOM
+const emotionBadge = document.getElementById('emotion-badge');
+const emotionEmoji = document.getElementById('emotion-emoji');
+const emotionLabel = document.getElementById('emotion-label');
+
 // 앱 상태 관리
 let currentStream = null;
 let currentFacingMode = 'user'; // 'user' (전면 셀카) 또는 'environment' (후면 카메라)
@@ -42,6 +54,18 @@ let isProcessingFrame = false;
 let lastFrameTime = performance.now();
 let frameCount = 0;
 let currentFps = 0;
+
+// 감정 상태 정의 및 스무딩 버퍼
+const EMOTIONS = {
+  smile: { emoji: '😄', title: '행복', sub: 'Smile', color: '#ffd700', border: '#ffea00' },
+  wink: { emoji: '😉', title: '윙크', sub: 'Wink', color: '#e056fd', border: '#f368e0' },
+  surprise: { emoji: '😲', title: '놀람', sub: 'Surprise', color: '#00f2fe', border: '#4facfe' },
+  angry: { emoji: '😠', title: '화남', sub: 'Angry', color: '#ff3366', border: '#ff0055' },
+  neutral: { emoji: '😐', title: '무표정', sub: 'Neutral', color: '#38bdf8', border: '#0284c7' }
+};
+
+let emotionHistory = [];
+let currentEmotion = EMOTIONS.neutral;
 
 // 인체 관절 연결선 정의 (MediaPipe Pose 33개 랜드마크 페어)
 const POSE_CONNECTIONS = [
@@ -82,7 +106,6 @@ pose.onResults(onPoseResults);
 // [3단계] 스마트폰 카메라 시작 및 전/후면 전환 제어
 // --------------------------------------------------------------------------
 async function startCamera() {
-  // 기존 스트림이 있다면 중지
   if (currentStream) {
     currentStream.getTracks().forEach(track => track.stop());
   }
@@ -104,7 +127,6 @@ async function startCamera() {
     currentStream = stream;
     video.srcObject = stream;
 
-    // 비디오 메타데이터가 로드되면 캔버스 크기 맞추기 및 분석 루프 시작
     video.onloadedmetadata = () => {
       video.play();
       canvas.width = video.videoWidth;
@@ -137,16 +159,101 @@ async function processVideoFrame() {
 }
 
 // --------------------------------------------------------------------------
-// [5단계] 인공지능 분석 결과 캔버스 시각화 (스켈레톤 그리기)
+// [5단계] 표정(이모티콘) 분석 알고리즘
+// --------------------------------------------------------------------------
+function analyzeFacialEmotion(landmarks) {
+  const nose = landmarks[0];
+  const leftEye = landmarks[2];
+  const rightEye = landmarks[5];
+  const leftEyeInner = landmarks[1];
+  const rightEyeInner = landmarks[4];
+  const mouthLeft = landmarks[9];
+  const mouthRight = landmarks[10];
+
+  if (!nose || !leftEye || !rightEye || !mouthLeft || !mouthRight) {
+    return EMOTIONS.neutral;
+  }
+
+  // 눈 사이 거리 (얼굴 기준 스케일)
+  const eyeDist = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
+  if (eyeDist < 0.03) {
+    return EMOTIONS.neutral;
+  }
+
+  // 1. 윙크 감지 (한쪽 눈 깜빡임 / 가시성 차이)
+  const leftVis = ((landmarks[1].visibility || 1) + (landmarks[2].visibility || 1) + (landmarks[3].visibility || 1)) / 3;
+  const rightVis = ((landmarks[4].visibility || 1) + (landmarks[5].visibility || 1) + (landmarks[6].visibility || 1)) / 3;
+  if (Math.abs(leftVis - rightVis) > 0.42) {
+    return EMOTIONS.wink;
+  }
+
+  // 2. 입 너비 및 상하 위치 계산
+  const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
+  const mouthRatio = mouthWidth / eyeDist; // 일반 기준 0.68 ~ 0.80
+
+  const mouthCenterY = (mouthLeft.y + mouthRight.y) / 2;
+  const mouthToNoseY = mouthCenterY - nose.y;
+  const verticalDrop = mouthToNoseY / eyeDist;
+
+  // 3. 미간 간격 계산
+  const innerEyeDist = Math.hypot(leftEyeInner.x - rightEyeInner.x, leftEyeInner.y - rightEyeInner.y);
+  const innerEyeRatio = innerEyeDist / eyeDist;
+
+  // [판별 1] 놀람 😲 : 입이 세로로 크게 벌어졌을 때
+  if (verticalDrop > 0.70 && mouthRatio < 0.92) {
+    return EMOTIONS.surprise;
+  }
+
+  // [판별 2] 활짝 웃음 😄 : 입 너비가 확 늘어나고 입꼬리가 올라갈 때
+  if (mouthRatio > 0.85) {
+    return EMOTIONS.smile;
+  }
+
+  // [판별 3] 화남 / 찌푸림 😠 : 미간 간격이 좁아지고 눈썹이 내려앉을 때
+  if (innerEyeRatio < 0.38) {
+    return EMOTIONS.angry;
+  }
+
+  return EMOTIONS.neutral;
+}
+
+// 감정 노이즈 제거 (이동 평균 스무딩)
+function getSmoothedEmotion(rawEmotion) {
+  emotionHistory.push(rawEmotion);
+  if (emotionHistory.length > 6) {
+    emotionHistory.shift();
+  }
+
+  const counts = {};
+  for (const e of emotionHistory) {
+    counts[e.title] = (counts[e.title] || 0) + 1;
+  }
+
+  let maxCount = 0;
+  let dominant = currentEmotion;
+  for (const e of emotionHistory) {
+    if (counts[e.title] > maxCount) {
+      maxCount = counts[e.title];
+      dominant = e;
+    }
+  }
+
+  if (maxCount >= 3) {
+    currentEmotion = dominant;
+  }
+  return currentEmotion;
+}
+
+// --------------------------------------------------------------------------
+// [6단계] 캔버스 시각화 (스켈레톤 및 머리 위 이모티콘 그리기)
 // --------------------------------------------------------------------------
 function onPoseResults(results) {
-  // 최초 1회 모델 로딩 완료 시 모달 닫기
   if (!isModelReady) {
     isModelReady = true;
     modelLoader.classList.add('hidden');
   }
 
-  // 5-1. FPS 계산
+  // FPS 계산
   const now = performance.now();
   frameCount++;
   if (now - lastFrameTime >= 500) {
@@ -156,29 +263,32 @@ function onPoseResults(results) {
     lastFrameTime = now;
   }
 
-  // 5-2. 캔버스 지우기 및 변환 설정
-  ctx.save();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const w = canvas.width;
+  const h = canvas.height;
+  const isFrontCamera = currentFacingMode === 'user';
 
-  // 전면 카메라인 경우 좌우 반전(거울 모드) 적용
-  if (currentFacingMode === 'user') {
-    ctx.translate(canvas.width, 0);
+  // 1. 영상 및 뼈대 레이어 (전면 카메라는 좌우 반전하여 렌더링)
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+
+  if (isFrontCamera) {
+    ctx.translate(w, 0);
     ctx.scale(-1, 1);
   }
 
-  // 5-3. 배경 렌더링 (모드별 분기)
   if (viewMode === 'overlay') {
-    // [모드 1: 오버레이] 카메라 영상 그리기
-    ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(results.image, 0, 0, w, h);
   } else {
-    // [모드 2: 네온 다크] 순수 검은 배경
     ctx.fillStyle = '#05070d';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, w, h);
   }
 
-  // 5-4. 랜드마크(스켈레톤) 그리기
   const landmarks = results.poseLandmarks;
   const isDetected = landmarks && landmarks.length > 0;
+  let detectedEmotion = EMOTIONS.neutral;
+  let headScreenX = 0;
+  let headScreenY = 0;
+  let eyeDistPixels = 60;
 
   if (isDetected) {
     statusText.textContent = "인체 감지 중";
@@ -194,61 +304,138 @@ function onPoseResults(results) {
       const p1 = landmarks[startIdx];
       const p2 = landmarks[endIdx];
 
-      // 신뢰도(visibility)가 0.4 이상인 관절만 연결
       if (p1 && p2 && (p1.visibility || 1) > 0.4 && (p2.visibility || 1) > 0.4) {
         ctx.beginPath();
-        ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
-        ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+        ctx.moveTo(p1.x * w, p1.y * h);
+        ctx.lineTo(p2.x * w, p2.y * h);
         ctx.stroke();
       }
     }
 
-    // 관절 점(포인트) 그리기
+    // 관절 점 그리기
     ctx.shadowBlur = 16;
     ctx.shadowColor = '#ff007f';
     for (let i = 0; i < landmarks.length; i++) {
       const lm = landmarks[i];
       if ((lm.visibility || 1) > 0.4) {
-        const x = lm.x * canvas.width;
-        const y = lm.y * canvas.height;
-
         ctx.beginPath();
-        ctx.arc(x, y, 6, 0, 2 * Math.PI);
+        ctx.arc(lm.x * w, lm.y * h, 5, 0, 2 * Math.PI);
         ctx.fillStyle = '#ff007f';
         ctx.fill();
 
-        // 중심 하이라이트 원
         ctx.beginPath();
-        ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+        ctx.arc(lm.x * w, lm.y * h, 2, 0, 2 * Math.PI);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
       }
     }
+
+    // 표정 분석
+    const rawEmotion = analyzeFacialEmotion(landmarks);
+    detectedEmotion = getSmoothedEmotion(rawEmotion);
+
+    // 머리 위 좌표 계산
+    const nose = landmarks[0];
+    const leftEye = landmarks[2];
+    const rightEye = landmarks[5];
+    const eyeDist = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
+    eyeDistPixels = eyeDist * w;
+
+    // 거울 모드에 따른 화면상 실제 X 좌표
+    const rawHeadX = nose.x * w;
+    headScreenX = isFrontCamera ? (w - rawHeadX) : rawHeadX;
+    headScreenY = (nose.y - eyeDist * 1.55) * h;
+
   } else {
     statusText.textContent = "사람을 비춰주세요";
     statusDot.classList.remove('active');
+    detectedEmotion = EMOTIONS.neutral;
   }
+
+  ctx.restore(); // 거울 모드 해제
+
+  // 2. 머리 위 플로팅 이모티콘 말풍선 (글자/이모지가 거꾸로 뒤집히지 않도록 정방향으로 렌더링)
+  if (isDetected && headScreenY > 0) {
+    drawFloatingEmotionBubble(ctx, detectedEmotion, headScreenX, headScreenY, eyeDistPixels);
+  }
+
+  // 3. 상단 HUD 이모티콘 뱃지 업데이트
+  emotionEmoji.textContent = detectedEmotion.emoji;
+  emotionLabel.textContent = detectedEmotion.title;
+  emotionBadge.style.borderColor = detectedEmotion.border;
+  emotionBadge.style.color = detectedEmotion.color;
+}
+
+// --------------------------------------------------------------------------
+// [7단계] 머리 위 네온 이모티콘 말풍선 렌더링 함수
+// --------------------------------------------------------------------------
+function drawFloatingEmotionBubble(ctx, emotion, headX, headY, eyeDistPx) {
+  const bubbleWidth = Math.max(130, Math.min(180, eyeDistPx * 1.9));
+  const bubbleHeight = 52;
+  const radius = 16;
+  const bubbleX = headX - bubbleWidth / 2;
+  const bubbleY = Math.max(65, headY - bubbleHeight - 12);
+
+  ctx.save();
+
+  // 네온 글로우 효과
+  ctx.shadowColor = emotion.border;
+  ctx.shadowBlur = 18;
+
+  // 말풍선 배경 (다크 글래스모피즘)
+  ctx.fillStyle = 'rgba(10, 14, 23, 0.88)';
+  ctx.strokeStyle = emotion.border;
+  ctx.lineWidth = 2.5;
+
+  ctx.beginPath();
+  ctx.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, radius);
+  ctx.fill();
+  ctx.stroke();
+
+  // 말풍선 하단 꼬리표
+  ctx.beginPath();
+  ctx.moveTo(headX - 8, bubbleY + bubbleHeight);
+  ctx.lineTo(headX, bubbleY + bubbleHeight + 9);
+  ctx.lineTo(headX + 8, bubbleY + bubbleHeight);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+
+  // 대형 이모티콘 아이콘
+  ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emotion.emoji, bubbleX + 30, bubbleY + bubbleHeight / 2 + 1);
+
+  // 한글 감정 제목
+  ctx.font = 'bold 13px Pretendard, sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.fillText(emotion.title, bubbleX + 56, bubbleY + bubbleHeight / 2 - 4);
+
+  // 영문 서브라벨
+  ctx.font = '10px Pretendard, sans-serif';
+  ctx.fillStyle = emotion.color;
+  ctx.fillText(emotion.sub, bubbleX + 56, bubbleY + bubbleHeight / 2 + 12);
 
   ctx.restore();
 }
 
 // --------------------------------------------------------------------------
-// [6단계] 모바일 인터랙션 이벤트 핸들러 (버튼 클릭 등)
+// [8단계] 모바일 인터랙션 이벤트 핸들러
 // --------------------------------------------------------------------------
-
-// 1. 카메라 시작 버튼 클릭 (오버레이 닫기)
 btnStartCamera.addEventListener('click', () => {
   startOverlay.classList.add('hidden');
   startCamera();
 });
 
-// 2. 전면/후면 카메라 전환
 btnSwitchCamera.addEventListener('click', () => {
   currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
   startCamera();
 });
 
-// 3. 뷰 모드 전환 (오버레이 <-> 네온 다크)
 btnToggleMode.addEventListener('click', () => {
   if (viewMode === 'overlay') {
     viewMode = 'dark';
@@ -259,16 +446,13 @@ btnToggleMode.addEventListener('click', () => {
   }
 });
 
-// 4. 사진 촬영 및 다운로드
 btnCapture.addEventListener('click', () => {
-  // 촬영 찰칵 애니메이션 효과
   btnCapture.style.transform = 'scale(0.85)';
   setTimeout(() => { btnCapture.style.transform = ''; }, 150);
 
-  // 캔버스 이미지를 PNG 파일로 다운로드
   const link = document.createElement('a');
   const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-  link.download = `poselens_${timestamp}.png`;
+  link.download = `poselens_${currentEmotion.sub.toLowerCase()}_${timestamp}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 });
