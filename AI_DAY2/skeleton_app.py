@@ -138,80 +138,113 @@ def analyze_gender_body(landmarks):
     if sh_w < 0.05:
         return "분석 중"
 
-    # 1. 눈 간격 및 귀 간격 (카메라 원근 왜곡에 가장 강인한 기준)
-    eye_dist = np.hypot(left_eye.x - right_eye.x, left_eye.y - right_eye.y)
-    if left_ear.visibility > 0.3 and right_ear.visibility > 0.3:
-        ear_dist = np.hypot(left_ear.x - right_ear.x, left_ear.y - right_ear.y)
-    else:
-        ear_dist = eye_dist * 2.2
-
-    # 2. 어깨 중심과 머리(코) 높이
+    # 1. 쇄골 중심(목점) 및 어깨 경사각(Shoulder Slope Angle) 계산
     sh_cy = (left_sh.y + right_sh.y) / 2
-    head_h = max(0.02, abs(sh_cy - nose.y))
+    slope_deg = int(np.degrees(np.arctan2(abs(left_sh.y - right_sh.y), sh_w)) + 16)
 
-    # 종합 체형 점수 (-100 ~ +100)
-    score = 0
+    # 2. 얼굴 세로 기준축 (헤어스타일에 영향받지 않는 코-입 중심축)
+    mouth_l = lm[9]
+    mouth_r = lm[10]
+    face_vertical = 0.08
+    if mouth_l.visibility > 0.3 and mouth_r.visibility > 0.3:
+        mouth_cy = (mouth_l.y + mouth_r.y) / 2
+        face_vertical = max(0.03, abs(mouth_cy - nose.y) * 2.6)
+    sh_to_face = sh_w / face_vertical
 
-    # 어깨 너비 대 눈 간격 (인체 비례학: 남성 > 3.1, 운동형 > 3.6, 여성 < 3.0)
-    if eye_dist > 0.015:
-        s_to_eye = sh_w / eye_dist
-        if s_to_eye >= 3.8:
-            score += 40       # 매우 넓은 어깨 (운동형 체격)
-        elif s_to_eye >= 3.25:
-            score += 25       # 듬직한 남성 체형
-        elif s_to_eye >= 2.85:
-            score += 10       # 표준 남성 체형
-        else:
-            score -= 25       # 슬림 체형
-
-    # 어깨 너비 대 귀/얼굴 너비
-    if ear_dist > 0.03:
-        s_to_ear = sh_w / ear_dist
-        if s_to_ear >= 2.05:
-            score += 30       # 넓은 프레임
-        elif s_to_ear >= 1.78:
-            score += 15
-        else:
-            score -= 20
-
-    # 어깨 너비 대 목/상체 높이 (현실적 화각 보정)
-    upper_ratio = sh_w / head_h
-    if upper_ratio >= 1.32:
-        score += 25
-    elif upper_ratio >= 1.15:
-        score += 10
-    else:
-        score -= 15
-
-    # 골반이 보이는 경우 (전신/중거리 V-Taper)
-    if left_hip.visibility > 0.35 and right_hip.visibility > 0.35:
+    # 3. 몸통(Torso) 세로 길이 대 어깨 너비
+    has_hips = left_hip.visibility > 0.35 and right_hip.visibility > 0.35
+    torso_ratio = 0.80
+    hip_w = 0.12
+    if has_hips:
+        hip_cy = (left_hip.y + right_hip.y) / 2
+        torso_h = max(0.05, abs(hip_cy - sh_cy))
+        torso_ratio = sh_w / torso_h
         hip_w = np.hypot(left_hip.x - right_hip.x, left_hip.y - right_hip.y)
-        v_taper = sh_w / max(0.01, hip_w)
-        if v_taper >= 1.18:
-            score += 35
-        elif v_taper >= 1.06:
-            score += 15
-        elif v_taper <= 0.98:
-            score -= 30
+
+    hip_to_sh = (hip_w / max(0.01, sh_w)) if has_hips else 0.85
+
+    # 4. 종합 체형 점수 계산
+    score = 0
+    if sh_to_face >= 1.92:
+        score += 35
+    elif sh_to_face >= 1.72:
+        score += 20
+    elif sh_to_face < 1.58:
+        score -= 30
+
+    if has_hips:
+        if torso_ratio >= 0.94:
+            score += 40
+        elif torso_ratio >= 0.82:
+            score += 20
+        elif torso_ratio <= 0.76:
+            score -= 35
+
+        if hip_to_sh <= 0.82:
+            score += 25
+        elif hip_to_sh >= 0.92:
+            score -= 25
+
+    if slope_deg >= 20:
+        score -= 15
+    elif slope_deg <= 16:
+        score += 15
 
     # 최종 판별
-    if score >= 45:
-        return "남성 추정 (탄탄한 운동형 💪)"
-    elif score >= 15:
-        return "남성 추정 (당당한 어깨 👤)"
-    elif score >= -15:
-        return "남성/중립 (슬림 표준 🧍)"
+    if score >= 50:
+        return f"남성 추정 (탄탄한 운동형 💪, {slope_deg}°)"
+    elif score >= 18:
+        return f"남성 추정 (당당한 어깨 👤, {slope_deg}°)"
+    elif score >= -18:
+        return f"슬림 균형 체형 (중립 🧍, {slope_deg}°)"
     else:
-        return "여성 추정 (균형 슬림 라인 👗)"
+        return f"여성 추정 (균형 슬림 라인 👗, {slope_deg}°)"
 
-def analyze_posture(landmarks):
-    """화각 및 자세 상태를 판별합니다."""
+def draw_dense_measurement_grid(canvas, landmarks, w, h):
+    """어깨 캘리퍼, 쇄골 중심점, 허리 라인, 골반 눈금 등 정밀 계측 점을 화면에 그립니다."""
     lm = landmarks.landmark
-    if lm[27].visibility > 0.4 or lm[28].visibility > 0.4:
-        return "전신 (Full Body)"
-    elif lm[25].visibility > 0.4 or lm[26].visibility > 0.4:
-        return "미디엄 샷 (하체 일부)"
-    return "상반신 (Close-up)"
+    left_sh = lm[11]
+    right_sh = lm[12]
+    left_hip = lm[23]
+    right_hip = lm[24]
+
+    if not left_sh or not right_sh:
+        return
+
+    lx, ly = int(left_sh.x * w), int(left_sh.y * h)
+    rx, ry = int(right_sh.x * w), int(right_sh.y * h)
+
+    # 1. 어깨 너비 수평 캘리퍼 선 (하늘색)
+    cv2.line(canvas, (lx, ly), (rx, ry), (254, 242, 0), 2)
+
+    # 2. 쇄골 중심점 (Clavicle Notch - 골드 포인트)
+    neck_x, neck_y = (lx + rx) // 2, (ly + ry) // 2
+    cv2.circle(canvas, (neck_x, neck_y), 6, (0, 215, 255), -1)
+    cv2.circle(canvas, (neck_x, neck_y), 6, (255, 255, 255), 1)
+
+    # 3. 어깨 외측 캘리퍼 브라켓 ([ --- ])
+    cv2.line(canvas, (lx - 6, ly - 8), (lx - 6, ly + 8), (255, 255, 255), 2)
+    cv2.line(canvas, (rx + 6, ry - 8), (rx + 6, ry + 8), (255, 255, 255), 2)
+
+    # 4. 골반 너비 눈금선 및 허리 라인 (골반 감지 시)
+    if left_hip.visibility > 0.35 and right_hip.visibility > 0.35:
+        lh_x, lh_y = int(left_hip.x * w), int(left_hip.y * h)
+        rh_x, rh_y = int(right_hip.x * w), int(right_hip.y * h)
+
+        # 골반 폭 연결선 (주황색)
+        cv2.line(canvas, (lh_x, lh_y), (rh_x, rh_y), (0, 170, 255), 2)
+
+        # 척추 축 (에메랄드 라인)
+        hip_mid_x, hip_mid_y = (lh_x + rh_x) // 2, (lh_y + rh_y) // 2
+        cv2.line(canvas, (neck_x, neck_y), (hip_mid_x, hip_mid_y), (136, 255, 0), 1)
+
+        # 허리 슬림 포인트 (바이올렛 점)
+        wl_x = int(lx * 0.45 + lh_x * 0.55)
+        wl_y = int(ly * 0.45 + lh_y * 0.55)
+        wr_x = int(rx * 0.45 + rh_x * 0.55)
+        wr_y = int(ry * 0.45 + rh_y * 0.55)
+        cv2.circle(canvas, (wl_x, wl_y), 5, (252, 132, 192), -1)
+        cv2.circle(canvas, (wr_x, wr_y), 5, (252, 132, 192), -1)
 
 def draw_profile_card_pillow(canvas, card_x, card_y, color_name, sample_bgr, gender_text, posture_text):
     """Pillow를 이용해 머리 위에 선명한 한글 AI 비전 프로필 카드를 그립니다."""
@@ -332,12 +365,15 @@ def main():
                         connection_drawing_spec=connection_spec
                     )
 
-                # 2. 옷 색상 및 성별/자세 분석
+                # 2. 🌟 정밀 신체 계측 마커 및 캘리퍼 가이드선 추가 렌더링
+                draw_dense_measurement_grid(canvas, results.pose_landmarks, w, h)
+
+                # 3. 옷 색상 및 성별/자세 분석
                 color_name, sample_bgr = analyze_clothing_color(frame, results.pose_landmarks, w, h)
                 gender_text = analyze_gender_body(results.pose_landmarks)
                 posture_text = analyze_posture(results.pose_landmarks)
 
-                # 3. 머리 위 AI 비전 프로필 카드 렌더링
+                # 4. 머리 위 AI 비전 프로필 카드 렌더링
                 if show_hud:
                     nose = results.pose_landmarks.landmark[0]
                     left_sh = results.pose_landmarks.landmark[11]

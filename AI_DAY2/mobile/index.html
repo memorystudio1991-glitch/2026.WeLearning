@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PoseLens AI - 모바일 실시간 인체 스켈레톤</title>
-  <meta name="description" content="스마트폰 카메라를 통해 실시간으로 인체 관절과 스켈레톤을 감지하는 모바일 AI 비전 웹앱">
+  <title>PoseLens AI - 모바일 다인원 실시간 인체 스켈레톤</title>
+  <meta name="description" content="스마트폰 카메라로 최대 4명 동시 인체 관절 및 옷 색상, 성별/체형을 실시간 분석하는 AI 웹앱">
   <!-- Pretendard 폰트 & FontAwesome 아이콘 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- MediaPipe Pose 라이브러리 -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,10 +26,11 @@
         <span>PoseLens</span>
       </div>
       <div class="profile-pill" id="profile-badge">
-        <span class="color-dot" id="cloth-color-dot" style="background-color: #38bdf8;"></span>
-        <span id="cloth-color-text">상의: 분석 중</span>
+        <i class="fa-solid fa-users" style="color: #00f2fe;"></i>
+        <span id="people-count-text">감지: 0명</span>
         <span class="divider">·</span>
-        <span id="gender-text">성별: 분석 중</span>
+        <span class="color-dot" id="cloth-color-dot" style="background-color: #38bdf8;"></span>
+        <span id="cloth-color-text">분석 중</span>
       </div>
       <div class="status-pill" id="status-badge">
         <span class="status-dot"></span>
@@ -85,6 +84,6 @@
     </nav>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
