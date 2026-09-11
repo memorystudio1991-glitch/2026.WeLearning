@@ -246,6 +246,15 @@ def draw_dense_measurement_grid(canvas, landmarks, w, h):
         cv2.circle(canvas, (wl_x, wl_y), 5, (252, 132, 192), -1)
         cv2.circle(canvas, (wr_x, wr_y), 5, (252, 132, 192), -1)
 
+def analyze_posture(landmarks):
+    """화각 및 자세 상태를 판별합니다."""
+    lm = landmarks.landmark
+    if lm[27].visibility > 0.4 or lm[28].visibility > 0.4:
+        return "전신 (Full Body)"
+    elif lm[25].visibility > 0.4 or lm[26].visibility > 0.4:
+        return "미디엄 샷 (하체 일부)"
+    return "상반신 (Close-up)"
+
 def draw_profile_card_pillow(canvas, card_x, card_y, color_name, sample_bgr, gender_text, posture_text):
     """Pillow를 이용해 머리 위에 선명한 한글 AI 비전 프로필 카드를 그립니다."""
     card_w = 230
