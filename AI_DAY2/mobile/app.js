@@ -273,47 +273,83 @@ function classifyColor(r, g, b) {
 }
 
 /**
- * 5-2. 어깨-골반 비율 기반 성별 및 체형 추정
+ * 5-2. 다각도 신체 비율(어깨/눈/얼굴/골반) 기반 정밀 성별 및 체형 추정
  */
 function analyzeGenderAndBody(landmarks) {
   const leftShoulder = landmarks[11];
   const rightShoulder = landmarks[12];
   const leftHip = landmarks[23];
   const rightHip = landmarks[24];
+  const leftEye = landmarks[2];
+  const rightEye = landmarks[5];
+  const leftEar = landmarks[7];
+  const rightEar = landmarks[8];
   const nose = landmarks[0];
 
-  if (!leftShoulder || !rightShoulder) {
+  if (!leftShoulder || !rightShoulder || !nose) {
     return { text: "성별: 분석 중", color: "#38bdf8" };
   }
 
   const shoulderWidth = Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y);
+  if (shoulderWidth < 0.05) {
+    return { text: "인체 감지 중", color: "#38bdf8" };
+  }
 
-  // 골반이 인식된 경우 (전신/중거리)
-  if (leftHip && rightHip && leftHip.visibility > 0.4 && rightHip.visibility > 0.4) {
+  // 눈 간격 및 얼굴 너비 (카메라 원근 왜곡에 가장 강인한 기준)
+  const eyeDist = (leftEye && rightEye) ? Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y) : 0.05;
+  const earDist = (leftEar && rightEar && leftEar.visibility > 0.3 && rightEar.visibility > 0.3)
+    ? Math.hypot(leftEar.x - rightEar.x, leftEar.y - rightEar.y)
+    : (eyeDist * 2.2);
+
+  // 어깨 중심과 머리(코) 높이
+  const shoulderCenterY = (leftShoulder.y + rightShoulder.y) / 2;
+  const headHeight = Math.max(0.02, Math.abs(shoulderCenterY - nose.y));
+
+  // 종합 체형 스코어 (-100 ~ +100)
+  let score = 0;
+
+  // 1. 어깨 너비 대 눈 간격 비율 (인체 비례학 표준: 남성 > 3.1, 운동형 > 3.6, 여성 < 3.0)
+  if (eyeDist > 0.015) {
+    const sToEye = shoulderWidth / eyeDist;
+    if (sToEye >= 3.8) score += 40;       // 매우 넓은 어깨 (운동형 체격)
+    else if (sToEye >= 3.25) score += 25;  // 듬직한 남성 체형
+    else if (sToEye >= 2.85) score += 10;  // 표준 체형
+    else score -= 25;                      // 슬림 체형
+  }
+
+  // 2. 어깨 너비 대 귀/얼굴 너비 비율
+  if (earDist > 0.03) {
+    const sToEar = shoulderWidth / earDist;
+    if (sToEar >= 2.05) score += 30;       // 어깨 프레임이 얼굴보다 확연히 큼
+    else if (sToEar >= 1.78) score += 15;
+    else score -= 20;
+  }
+
+  // 3. 어깨 너비 대 상체/목 높이 비율 (현실적인 화각 보정: 1.15~1.35)
+  const upperRatio = shoulderWidth / headHeight;
+  if (upperRatio >= 1.32) score += 25;     // 상체 역삼각형
+  else if (upperRatio >= 1.15) score += 10;
+  else score -= 15;
+
+  // 4. 골반이 보이는 경우 (전신/중거리 V-Taper 반영)
+  if (leftHip && rightHip && leftHip.visibility > 0.35 && rightHip.visibility > 0.35) {
     const hipWidth = Math.hypot(leftHip.x - rightHip.x, leftHip.y - rightHip.y);
-    const ratio = shoulderWidth / Math.max(0.01, hipWidth);
-
-    if (ratio >= 1.26) {
-      return { text: "남성 추정 (역삼각형 체형)", color: "#38bdf8" };
-    } else if (ratio <= 1.15) {
-      return { text: "여성 추정 (골반 균형 체형)", color: "#f472b6" };
-    } else {
-      return { text: "슬림/표준 체형", color: "#a78bfa" };
-    }
+    const vTaper = shoulderWidth / Math.max(0.01, hipWidth);
+    if (vTaper >= 1.18) score += 35;       // 역삼각형
+    else if (vTaper >= 1.06) score += 15;
+    else if (vTaper <= 0.98) score -= 30;  // 골반 강조
   }
 
-  // 상반신 클로즈업인 경우 (어깨 너비 대 머리 높이 비율)
-  if (nose) {
-    const headHeight = Math.abs(leftShoulder.y - nose.y);
-    const upperRatio = shoulderWidth / Math.max(0.01, headHeight);
-    if (upperRatio > 1.85) {
-      return { text: "남성 추정 (넓은 어깨형)", color: "#38bdf8" };
-    } else {
-      return { text: "여성 추정 (슬림 어깨형)", color: "#f472b6" };
-    }
+  // 최종 판별 및 친절한 체형 표현
+  if (score >= 45) {
+    return { text: "남성 추정 (탄탄한 운동형 체형 💪)", color: "#00f2fe" };
+  } else if (score >= 15) {
+    return { text: "남성 추정 (당당한 어깨 체형 👤)", color: "#38bdf8" };
+  } else if (score >= -15) {
+    return { text: "남성/중립 (슬림 표준 체형 🧍)", color: "#a78bfa" };
+  } else {
+    return { text: "여성 추정 (균형 슬림 라인 👗)", color: "#f472b6" };
   }
-
-  return { text: "체형 분석 중", color: "#38bdf8" };
 }
 
 /**

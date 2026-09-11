@@ -122,30 +122,87 @@ def analyze_clothing_color(frame, landmarks, w, h):
     return color_name, sample_bgr
 
 def analyze_gender_body(landmarks):
-    """어깨 대비 골반/체형 비율을 분석하여 성별 및 체형을 추정합니다."""
+    """어깨, 눈, 귀, 골반의 다각도 신체 비율을 정밀 분석하여 성별 및 체형을 추정합니다."""
     lm = landmarks.landmark
     left_sh = lm[11]
     right_sh = lm[12]
     left_hip = lm[23]
     right_hip = lm[24]
+    left_eye = lm[2]
+    right_eye = lm[5]
+    left_ear = lm[7]
+    right_ear = lm[8]
     nose = lm[0]
 
     sh_w = np.hypot(left_sh.x - right_sh.x, left_sh.y - right_sh.y)
+    if sh_w < 0.05:
+        return "분석 중"
 
-    if left_hip.visibility > 0.4 and right_hip.visibility > 0.4:
-        hip_w = np.hypot(left_hip.x - right_hip.x, left_hip.y - right_hip.y)
-        ratio = sh_w / max(0.01, hip_w)
-        if ratio >= 1.26:
-            return "남성 추정 (역삼각형 체형)"
-        elif ratio <= 1.15:
-            return "여성 추정 (골반 균형 체형)"
+    # 1. 눈 간격 및 귀 간격 (카메라 원근 왜곡에 가장 강인한 기준)
+    eye_dist = np.hypot(left_eye.x - right_eye.x, left_eye.y - right_eye.y)
+    if left_ear.visibility > 0.3 and right_ear.visibility > 0.3:
+        ear_dist = np.hypot(left_ear.x - right_ear.x, left_ear.y - right_ear.y)
+    else:
+        ear_dist = eye_dist * 2.2
+
+    # 2. 어깨 중심과 머리(코) 높이
+    sh_cy = (left_sh.y + right_sh.y) / 2
+    head_h = max(0.02, abs(sh_cy - nose.y))
+
+    # 종합 체형 점수 (-100 ~ +100)
+    score = 0
+
+    # 어깨 너비 대 눈 간격 (인체 비례학: 남성 > 3.1, 운동형 > 3.6, 여성 < 3.0)
+    if eye_dist > 0.015:
+        s_to_eye = sh_w / eye_dist
+        if s_to_eye >= 3.8:
+            score += 40       # 매우 넓은 어깨 (운동형 체격)
+        elif s_to_eye >= 3.25:
+            score += 25       # 듬직한 남성 체형
+        elif s_to_eye >= 2.85:
+            score += 10       # 표준 남성 체형
         else:
-            return "슬림 / 표준 체형"
+            score -= 25       # 슬림 체형
 
-    head_h = abs(left_sh.y - nose.y)
-    if head_h > 0.01 and (sh_w / head_h) > 1.85:
-        return "남성 추정 (넓은 어깨형)"
-    return "여성 추정 (슬림 어깨형)"
+    # 어깨 너비 대 귀/얼굴 너비
+    if ear_dist > 0.03:
+        s_to_ear = sh_w / ear_dist
+        if s_to_ear >= 2.05:
+            score += 30       # 넓은 프레임
+        elif s_to_ear >= 1.78:
+            score += 15
+        else:
+            score -= 20
+
+    # 어깨 너비 대 목/상체 높이 (현실적 화각 보정)
+    upper_ratio = sh_w / head_h
+    if upper_ratio >= 1.32:
+        score += 25
+    elif upper_ratio >= 1.15:
+        score += 10
+    else:
+        score -= 15
+
+    # 골반이 보이는 경우 (전신/중거리 V-Taper)
+    if left_hip.visibility > 0.35 and right_hip.visibility > 0.35:
+        hip_w = np.hypot(left_hip.x - right_hip.x, left_hip.y - right_hip.y)
+        v_taper = sh_w / max(0.01, hip_w)
+        if v_taper >= 1.18:
+            score += 35
+        elif v_taper >= 1.06:
+            score += 15
+        elif v_taper <= 0.98:
+            score -= 30
+
+    # 최종 판별
+    if score >= 45:
+        return "남성 추정 (탄탄한 운동형 💪)"
+    elif score >= 15:
+        return "남성 추정 (당당한 어깨 👤)"
+    elif score >= -15:
+        return "남성/중립 (슬림 표준 🧍)"
+    else:
+        return "여성 추정 (균형 슬림 라인 👗)"
 
 def analyze_posture(landmarks):
     """화각 및 자세 상태를 판별합니다."""
