@@ -1,19 +1,15 @@
 /**
  * ==========================================================================
- *  [AI_DAY2] PoseLens AI - 모바일 실시간 인체 스켈레톤 & 표정 이모티콘 (app.js)
+ *  [AI_DAY2] PoseLens AI - 모바일 실시간 인체 스켈레톤 & 비전 분석 (app.js)
  * ==========================================================================
  *  - 기능:
  *    1. 스마트폰 카메라(전면/후면) 실시간 비디오 스트림 획득
  *    2. MediaPipe Pose 인공지능을 통한 33개 관절 랜드마크 추출
- *    3. 눈/입/코 좌표 기하학적 분석을 통한 실시간 표정(이모티콘) 판별
- *       - 😄 활짝 웃음 (Smile)
- *       - 😠 화남 / 찌푸림 (Angry)
- *       - 😲 놀람 (Surprise)
- *       - 😉 윙크 (Wink)
- *       - 😐 무표정 (Neutral)
- *    4. 머리 위 플로팅 네온 이모티콘 말풍선 렌더링
- *    5. 캔버스 위 실시간 네온 스켈레톤 시각화 (오버레이 / 다크 모드)
- *    6. 사진 캡처 및 다운로드 기능 제공
+ *    3. 상의 영역(Torso) 픽셀 샘플링을 통한 실시간 옷 색깔(Color) 감지
+ *    4. 어깨/골반 비율(Shoulder-to-Hip) 기반 성별 및 체형 추정
+ *    5. 화각 및 자세(상반신 / 전신 / 앉음) 실시간 감지
+ *    6. 머리 위 플로팅 AI 비전 프로필 카드 렌더링
+ *    7. 사진 캡처 및 다운로드 기능 제공
  * ==========================================================================
  */
 
@@ -22,7 +18,7 @@
 // --------------------------------------------------------------------------
 const video = document.getElementById('webcam');
 const canvas = document.getElementById('output-canvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 const startOverlay = document.getElementById('start-overlay');
 const btnStartCamera = document.getElementById('btn-start-camera');
@@ -38,10 +34,10 @@ const statusText = document.getElementById('status-text');
 const fpsValue = document.getElementById('fps-value');
 const modeText = document.getElementById('mode-text');
 
-// 표정 이모티콘 DOM
-const emotionBadge = document.getElementById('emotion-badge');
-const emotionEmoji = document.getElementById('emotion-emoji');
-const emotionLabel = document.getElementById('emotion-label');
+// 프로필 데이터 DOM
+const clothColorDot = document.getElementById('cloth-color-dot');
+const clothColorText = document.getElementById('cloth-color-text');
+const genderText = document.getElementById('gender-text');
 
 // 앱 상태 관리
 let currentStream = null;
@@ -55,17 +51,12 @@ let lastFrameTime = performance.now();
 let frameCount = 0;
 let currentFps = 0;
 
-// 감정 상태 정의 및 스무딩 버퍼
-const EMOTIONS = {
-  smile: { emoji: '😄', title: '행복', sub: 'Smile', color: '#ffd700', border: '#ffea00' },
-  wink: { emoji: '😉', title: '윙크', sub: 'Wink', color: '#e056fd', border: '#f368e0' },
-  surprise: { emoji: '😲', title: '놀람', sub: 'Surprise', color: '#00f2fe', border: '#4facfe' },
-  angry: { emoji: '😠', title: '화남', sub: 'Angry', color: '#ff3366', border: '#ff0055' },
-  neutral: { emoji: '😐', title: '무표정', sub: 'Neutral', color: '#38bdf8', border: '#0284c7' }
-};
-
-let emotionHistory = [];
-let currentEmotion = EMOTIONS.neutral;
+// 프로필 데이터 스무딩
+let smoothedColor = { name: "분석 중", hex: "#38bdf8" };
+let smoothedGender = { text: "분석 중", color: "#38bdf8" };
+let smoothedPosture = "상반신";
+let colorHistory = [];
+let genderHistory = [];
 
 // 인체 관절 연결선 정의 (MediaPipe Pose 33개 랜드마크 페어)
 const POSE_CONNECTIONS = [
@@ -93,10 +84,10 @@ const pose = new Pose({
 });
 
 pose.setOptions({
-  modelComplexity: 1,         // 1: 모바일 환경에서 속도와 정확도 균형 최적
-  smoothLandmarks: true,       // 프레임 간 흔들림 보정
-  enableSegmentation: false,   // 배경 분리 끄기 (속도 극대화)
-  minDetectionConfidence: 0.5, // 50% 이상 신뢰 시 인식
+  modelComplexity: 1,
+  smoothLandmarks: true,
+  enableSegmentation: false,
+  minDetectionConfidence: 0.5,
   minTrackingConfidence: 0.5
 });
 
@@ -159,93 +150,192 @@ async function processVideoFrame() {
 }
 
 // --------------------------------------------------------------------------
-// [5단계] 표정(이모티콘) 분석 알고리즘
+// [5단계] 시각 데이터 분석 알고리즘 (옷 색깔, 성별 추정, 자세)
 // --------------------------------------------------------------------------
-function analyzeFacialEmotion(landmarks) {
-  const nose = landmarks[0];
-  const leftEye = landmarks[2];
-  const rightEye = landmarks[5];
-  const leftEyeInner = landmarks[1];
-  const rightEyeInner = landmarks[4];
-  const mouthLeft = landmarks[9];
-  const mouthRight = landmarks[10];
 
-  if (!nose || !leftEye || !rightEye || !mouthLeft || !mouthRight) {
-    return EMOTIONS.neutral;
+/**
+ * 5-1. 상의(Torso) 영역 픽셀을 샘플링하여 옷 색상 판별
+ */
+function analyzeClothingColor(ctx, landmarks, w, h, isFrontCamera) {
+  const leftShoulder = landmarks[11];
+  const rightShoulder = landmarks[12];
+  const leftHip = landmarks[23];
+  const rightHip = landmarks[24];
+
+  if (!leftShoulder || !rightShoulder) {
+    return { name: "알 수 없음", hex: "#94a3b8" };
   }
 
-  // 눈 사이 거리 (얼굴 기준 스케일)
-  const eyeDist = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
-  if (eyeDist < 0.03) {
-    return EMOTIONS.neutral;
+  // 상체 중심점(가슴/복부 영역) 계산
+  const shoulderCenterX = (leftShoulder.x + rightShoulder.x) / 2;
+  const shoulderCenterY = (leftShoulder.y + rightShoulder.y) / 2;
+  const shoulderWidth = Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y);
+
+  let targetY;
+  if (leftHip && rightHip && leftHip.visibility > 0.3 && rightHip.visibility > 0.3) {
+    const hipCenterY = (leftHip.y + rightHip.y) / 2;
+    targetY = shoulderCenterY * 0.4 + hipCenterY * 0.6; // 상의 중심부
+  } else {
+    targetY = shoulderCenterY + shoulderWidth * 0.45; // 골반 미인식 시 어깨 기준 하단
   }
 
-  // 1. 윙크 감지 (한쪽 눈 깜빡임 / 가시성 차이)
-  const leftVis = ((landmarks[1].visibility || 1) + (landmarks[2].visibility || 1) + (landmarks[3].visibility || 1)) / 3;
-  const rightVis = ((landmarks[4].visibility || 1) + (landmarks[5].visibility || 1) + (landmarks[6].visibility || 1)) / 3;
-  if (Math.abs(leftVis - rightVis) > 0.42) {
-    return EMOTIONS.wink;
+  // 화면 픽셀 좌표 변환
+  const pxX = Math.round(shoulderCenterX * w);
+  const pxY = Math.round(targetY * h);
+
+  // 샘플링 영역 (반경 16px 내 25개 점 평균)
+  const sampleRadius = Math.max(10, Math.round(shoulderWidth * w * 0.08));
+  let totalR = 0, totalG = 0, totalB = 0, count = 0;
+
+  try {
+    const imgData = ctx.getImageData(
+      Math.max(0, pxX - sampleRadius),
+      Math.max(0, pxY - sampleRadius),
+      sampleRadius * 2,
+      sampleRadius * 2
+    );
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 16) { // 4픽셀 단위 스킵 샘플링
+      totalR += data[i];
+      totalG += data[i + 1];
+      totalB += data[i + 2];
+      count++;
+    }
+  } catch (err) {
+    return { name: "추출 중", hex: "#94a3b8" };
   }
 
-  // 2. 입 너비 및 상하 위치 계산
-  const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
-  const mouthRatio = mouthWidth / eyeDist; // 일반 기준 0.68 ~ 0.80
+  if (count === 0) return { name: "분석 중", hex: "#94a3b8" };
 
-  const mouthCenterY = (mouthLeft.y + mouthRight.y) / 2;
-  const mouthToNoseY = mouthCenterY - nose.y;
-  const verticalDrop = mouthToNoseY / eyeDist;
+  const r = Math.round(totalR / count);
+  const g = Math.round(totalG / count);
+  const b = Math.round(totalB / count);
 
-  // 3. 미간 간격 계산
-  const innerEyeDist = Math.hypot(leftEyeInner.x - rightEyeInner.x, leftEyeInner.y - rightEyeInner.y);
-  const innerEyeRatio = innerEyeDist / eyeDist;
-
-  // [판별 1] 놀람 😲 : 입이 세로로 크게 벌어졌을 때
-  if (verticalDrop > 0.70 && mouthRatio < 0.92) {
-    return EMOTIONS.surprise;
-  }
-
-  // [판별 2] 활짝 웃음 😄 : 입 너비가 확 늘어나고 입꼬리가 올라갈 때
-  if (mouthRatio > 0.85) {
-    return EMOTIONS.smile;
-  }
-
-  // [판별 3] 화남 / 찌푸림 😠 : 미간 간격이 좁아지고 눈썹이 내려앉을 때
-  if (innerEyeRatio < 0.38) {
-    return EMOTIONS.angry;
-  }
-
-  return EMOTIONS.neutral;
+  return classifyColor(r, g, b);
 }
 
-// 감정 노이즈 제거 (이동 평균 스무딩)
-function getSmoothedEmotion(rawEmotion) {
-  emotionHistory.push(rawEmotion);
-  if (emotionHistory.length > 6) {
-    emotionHistory.shift();
+/**
+ * RGB 값을 직관적인 한국어 색상명 및 헥스 코드로 분류
+ */
+function classifyColor(r, g, b) {
+  const brightness = (r + g + b) / 3;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const saturation = max === 0 ? 0 : delta / max;
+
+  // 1. 명도 및 채도 극단치 (블랙, 화이트, 그레이)
+  if (brightness < 45) {
+    return { name: "블랙", hex: "#1e293b", badge: "#0f172a" };
+  }
+  if (brightness > 200 && saturation < 0.16) {
+    return { name: "화이트", hex: "#f8fafc", badge: "#e2e8f0" };
+  }
+  if (saturation < 0.16) {
+    return { name: "그레이", hex: "#64748b", badge: "#475569" };
   }
 
-  const counts = {};
-  for (const e of emotionHistory) {
-    counts[e.title] = (counts[e.title] || 0) + 1;
+  // 2. 색상환(Hue) 계산 (0~360도)
+  let h = 0;
+  if (delta !== 0) {
+    if (max === r) {
+      h = ((g - b) / delta) % 6;
+    } else if (max === g) {
+      h = (b - r) / delta + 2;
+    } else {
+      h = (r - g) / delta + 4;
+    }
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
   }
 
-  let maxCount = 0;
-  let dominant = currentEmotion;
-  for (const e of emotionHistory) {
-    if (counts[e.title] > maxCount) {
-      maxCount = counts[e.title];
-      dominant = e;
+  // 3. 색상별 판별
+  if (h >= 345 || h < 14) {
+    return { name: "레드", hex: "#ef4444", badge: "#dc2626" };
+  } else if (h >= 14 && h < 42) {
+    if (brightness < 100) return { name: "브라운", hex: "#854d0e", badge: "#713f12" };
+    return { name: "오렌지", hex: "#f97316", badge: "#ea580c" };
+  } else if (h >= 42 && h < 68) {
+    if (saturation < 0.35) return { name: "베이지", hex: "#d4b996", badge: "#b89772" };
+    return { name: "옐로우", hex: "#eab308", badge: "#ca8a04" };
+  } else if (h >= 68 && h < 165) {
+    return { name: "그린", hex: "#22c55e", badge: "#16a34a" };
+  } else if (h >= 165 && h < 205) {
+    return { name: "스카이/민트", hex: "#06b6d4", badge: "#0891b2" };
+  } else if (h >= 205 && h < 260) {
+    if (brightness < 85) return { name: "네이비", hex: "#1e3a8a", badge: "#172554" };
+    return { name: "블루", hex: "#3b82f6", badge: "#2563eb" };
+  } else if (h >= 260 && h < 315) {
+    return { name: "퍼플", hex: "#a855f7", badge: "#9333ea" };
+  } else {
+    return { name: "핑크", hex: "#ec4899", badge: "#db2777" };
+  }
+}
+
+/**
+ * 5-2. 어깨-골반 비율 기반 성별 및 체형 추정
+ */
+function analyzeGenderAndBody(landmarks) {
+  const leftShoulder = landmarks[11];
+  const rightShoulder = landmarks[12];
+  const leftHip = landmarks[23];
+  const rightHip = landmarks[24];
+  const nose = landmarks[0];
+
+  if (!leftShoulder || !rightShoulder) {
+    return { text: "성별: 분석 중", color: "#38bdf8" };
+  }
+
+  const shoulderWidth = Math.hypot(leftShoulder.x - rightShoulder.x, leftShoulder.y - rightShoulder.y);
+
+  // 골반이 인식된 경우 (전신/중거리)
+  if (leftHip && rightHip && leftHip.visibility > 0.4 && rightHip.visibility > 0.4) {
+    const hipWidth = Math.hypot(leftHip.x - rightHip.x, leftHip.y - rightHip.y);
+    const ratio = shoulderWidth / Math.max(0.01, hipWidth);
+
+    if (ratio >= 1.26) {
+      return { text: "남성 추정 (역삼각형 체형)", color: "#38bdf8" };
+    } else if (ratio <= 1.15) {
+      return { text: "여성 추정 (골반 균형 체형)", color: "#f472b6" };
+    } else {
+      return { text: "슬림/표준 체형", color: "#a78bfa" };
     }
   }
 
-  if (maxCount >= 3) {
-    currentEmotion = dominant;
+  // 상반신 클로즈업인 경우 (어깨 너비 대 머리 높이 비율)
+  if (nose) {
+    const headHeight = Math.abs(leftShoulder.y - nose.y);
+    const upperRatio = shoulderWidth / Math.max(0.01, headHeight);
+    if (upperRatio > 1.85) {
+      return { text: "남성 추정 (넓은 어깨형)", color: "#38bdf8" };
+    } else {
+      return { text: "여성 추정 (슬림 어깨형)", color: "#f472b6" };
+    }
   }
-  return currentEmotion;
+
+  return { text: "체형 분석 중", color: "#38bdf8" };
+}
+
+/**
+ * 5-3. 거리 및 자세 상태 판별
+ */
+function analyzePosture(landmarks) {
+  const leftAnkle = landmarks[27];
+  const rightAnkle = landmarks[28];
+  const leftKnee = landmarks[25];
+  const rightKnee = landmarks[26];
+
+  if ((leftAnkle && leftAnkle.visibility > 0.4) || (rightAnkle && rightAnkle.visibility > 0.4)) {
+    return "전신 (Full Body)";
+  } else if ((leftKnee && leftKnee.visibility > 0.4) || (rightKnee && rightKnee.visibility > 0.4)) {
+    return "미디엄 샷 (하체 일부)";
+  } else {
+    return "상반신 (Close-up)";
+  }
 }
 
 // --------------------------------------------------------------------------
-// [6단계] 캔버스 시각화 (스켈레톤 및 머리 위 이모티콘 그리기)
+// [6단계] 캔버스 시각화 (스켈레톤 및 머리 위 AI 비전 카드 렌더링)
 // --------------------------------------------------------------------------
 function onPoseResults(results) {
   if (!isModelReady) {
@@ -267,7 +357,7 @@ function onPoseResults(results) {
   const h = canvas.height;
   const isFrontCamera = currentFacingMode === 'user';
 
-  // 1. 영상 및 뼈대 레이어 (전면 카메라는 좌우 반전하여 렌더링)
+  // 1. 영상 배경 렌더링 (전면 카메라는 거울 모드)
   ctx.save();
   ctx.clearRect(0, 0, w, h);
 
@@ -285,16 +375,13 @@ function onPoseResults(results) {
 
   const landmarks = results.poseLandmarks;
   const isDetected = landmarks && landmarks.length > 0;
-  let detectedEmotion = EMOTIONS.neutral;
-  let headScreenX = 0;
-  let headScreenY = 0;
-  let eyeDistPixels = 60;
+  let cardX = 0, cardY = 0, eyeDistPx = 60;
 
   if (isDetected) {
     statusText.textContent = "인체 감지 중";
     statusDot.classList.add('active');
 
-    // 뼈대 연결선 그리기 (네온 라인)
+    // 2. 뼈대 연결선 그리기 (네온 라인)
     ctx.lineWidth = 4;
     ctx.strokeStyle = viewMode === 'overlay' ? '#00f2fe' : '#00ff88';
     ctx.shadowColor = viewMode === 'overlay' ? '#00f2fe' : '#00ff88';
@@ -312,7 +399,7 @@ function onPoseResults(results) {
       }
     }
 
-    // 관절 점 그리기
+    // 3. 관절 점 그리기
     ctx.shadowBlur = 16;
     ctx.shadowColor = '#ff007f';
     for (let i = 0; i < landmarks.length; i++) {
@@ -330,95 +417,111 @@ function onPoseResults(results) {
       }
     }
 
-    // 표정 분석
-    const rawEmotion = analyzeFacialEmotion(landmarks);
-    detectedEmotion = getSmoothedEmotion(rawEmotion);
+    // 4. 시각 데이터 분석 (옷 색깔, 성별, 자세)
+    const detectedColor = analyzeClothingColor(ctx, landmarks, w, h, isFrontCamera);
+    const detectedGender = analyzeGenderAndBody(landmarks);
+    const detectedPosture = analyzePosture(landmarks);
 
-    // 머리 위 좌표 계산
+    // 스무딩 업데이트
+    smoothedColor = detectedColor;
+    smoothedGender = detectedGender;
+    smoothedPosture = detectedPosture;
+
+    // 머리 위 카드 위치 계산
     const nose = landmarks[0];
     const leftEye = landmarks[2];
     const rightEye = landmarks[5];
     const eyeDist = Math.hypot(leftEye.x - rightEye.x, leftEye.y - rightEye.y);
-    eyeDistPixels = eyeDist * w;
+    eyeDistPx = eyeDist * w;
 
-    // 거울 모드에 따른 화면상 실제 X 좌표
     const rawHeadX = nose.x * w;
-    headScreenX = isFrontCamera ? (w - rawHeadX) : rawHeadX;
-    headScreenY = (nose.y - eyeDist * 1.55) * h;
+    cardX = isFrontCamera ? (w - rawHeadX) : rawHeadX;
+    cardY = (nose.y - eyeDist * 1.6) * h;
 
   } else {
     statusText.textContent = "사람을 비춰주세요";
     statusDot.classList.remove('active');
-    detectedEmotion = EMOTIONS.neutral;
   }
 
   ctx.restore(); // 거울 모드 해제
 
-  // 2. 머리 위 플로팅 이모티콘 말풍선 (글자/이모지가 거꾸로 뒤집히지 않도록 정방향으로 렌더링)
-  if (isDetected && headScreenY > 0) {
-    drawFloatingEmotionBubble(ctx, detectedEmotion, headScreenX, headScreenY, eyeDistPixels);
+  // 5. 머리 위 AI 비전 프로필 카드 렌더링 (글자 뒤집힘 방지 정방향 렌더링)
+  if (isDetected && cardY > 0) {
+    drawVisionProfileCard(ctx, cardX, cardY, smoothedColor, smoothedGender, smoothedPosture, eyeDistPx);
   }
 
-  // 3. 상단 HUD 이모티콘 뱃지 업데이트
-  emotionEmoji.textContent = detectedEmotion.emoji;
-  emotionLabel.textContent = detectedEmotion.title;
-  emotionBadge.style.borderColor = detectedEmotion.border;
-  emotionBadge.style.color = detectedEmotion.color;
+  // 6. 상단 HUD 실시간 배지 동기화
+  clothColorDot.style.backgroundColor = smoothedColor.hex;
+  clothColorText.textContent = `상의: ${smoothedColor.name}`;
+  genderText.textContent = smoothedGender.text.replace(' (', ' · ').replace(')', '');
+  genderText.style.color = smoothedGender.color;
 }
 
 // --------------------------------------------------------------------------
-// [7단계] 머리 위 네온 이모티콘 말풍선 렌더링 함수
+// [7단계] 머리 위 플로팅 AI 비전 프로필 카드 렌더링
 // --------------------------------------------------------------------------
-function drawFloatingEmotionBubble(ctx, emotion, headX, headY, eyeDistPx) {
-  const bubbleWidth = Math.max(130, Math.min(180, eyeDistPx * 1.9));
-  const bubbleHeight = 52;
-  const radius = 16;
-  const bubbleX = headX - bubbleWidth / 2;
-  const bubbleY = Math.max(65, headY - bubbleHeight - 12);
+function drawVisionProfileCard(ctx, headX, headY, colorInfo, genderInfo, posture, eyeDistPx) {
+  const cardWidth = Math.max(180, Math.min(240, eyeDistPx * 2.2));
+  const cardHeight = 76;
+  const radius = 14;
+  const cardX = Math.max(12, Math.min(canvas.width - cardWidth - 12, headX - cardWidth / 2));
+  const cardY = Math.max(68, headY - cardHeight - 12);
 
   ctx.save();
 
-  // 네온 글로우 효과
-  ctx.shadowColor = emotion.border;
-  ctx.shadowBlur = 18;
+  // 1. 네온 글로우 카드 테두리 & 배경
+  ctx.shadowColor = '#00f2fe';
+  ctx.shadowBlur = 14;
 
-  // 말풍선 배경 (다크 글래스모피즘)
-  ctx.fillStyle = 'rgba(10, 14, 23, 0.88)';
-  ctx.strokeStyle = emotion.border;
-  ctx.lineWidth = 2.5;
+  ctx.fillStyle = 'rgba(10, 14, 23, 0.90)';
+  ctx.strokeStyle = 'rgba(0, 242, 254, 0.55)';
+  ctx.lineWidth = 1.8;
 
   ctx.beginPath();
-  ctx.roundRect(bubbleX, bubbleY, bubbleWidth, bubbleHeight, radius);
+  ctx.roundRect(cardX, cardY, cardWidth, cardHeight, radius);
   ctx.fill();
   ctx.stroke();
 
-  // 말풍선 하단 꼬리표
+  // 2. 하단 꼬리표
   ctx.beginPath();
-  ctx.moveTo(headX - 8, bubbleY + bubbleHeight);
-  ctx.lineTo(headX, bubbleY + bubbleHeight + 9);
-  ctx.lineTo(headX + 8, bubbleY + bubbleHeight);
+  ctx.moveTo(headX - 6, cardY + cardHeight);
+  ctx.lineTo(headX, cardY + cardHeight + 8);
+  ctx.lineTo(headX + 6, cardY + cardHeight);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
   ctx.shadowBlur = 0;
 
-  // 대형 이모티콘 아이콘
-  ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(emotion.emoji, bubbleX + 30, bubbleY + bubbleHeight / 2 + 1);
-
-  // 한글 감정 제목
-  ctx.font = 'bold 13px Pretendard, sans-serif';
-  ctx.fillStyle = '#ffffff';
+  // 3. 카드 내부 텍스트 렌더링
+  // 헤더 타이틀
+  ctx.font = 'bold 11px Pretendard, sans-serif';
+  ctx.fillStyle = '#00f2fe';
   ctx.textAlign = 'left';
-  ctx.fillText(emotion.title, bubbleX + 56, bubbleY + bubbleHeight / 2 - 4);
+  ctx.fillText('⚡ AI VISION PROFILE', cardX + 12, cardY + 18);
 
-  // 영문 서브라벨
+  // 1행: 성별/체형
+  ctx.font = '12px Pretendard, sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText(`👤 ${genderInfo.text}`, cardX + 12, cardY + 36);
+
+  // 2행: 상의 옷 색깔 (컬러칩 서클 포함)
+  ctx.fillText(`👕 상의: ${colorInfo.name}`, cardX + 12, cardY + 54);
+
+  // 컬러칩 동그라미
+  const textWidth = ctx.measureText(`👕 상의: ${colorInfo.name}`).width;
+  ctx.beginPath();
+  ctx.arc(cardX + 16 + textWidth + 8, cardY + 50, 5, 0, 2 * Math.PI);
+  ctx.fillStyle = colorInfo.hex;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 3행: 자세/화각
   ctx.font = '10px Pretendard, sans-serif';
-  ctx.fillStyle = emotion.color;
-  ctx.fillText(emotion.sub, bubbleX + 56, bubbleY + bubbleHeight / 2 + 12);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(`📏 ${posture}`, cardX + 12, cardY + 68);
 
   ctx.restore();
 }
@@ -452,7 +555,7 @@ btnCapture.addEventListener('click', () => {
 
   const link = document.createElement('a');
   const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
-  link.download = `poselens_${currentEmotion.sub.toLowerCase()}_${timestamp}.png`;
+  link.download = `poselens_profile_${timestamp}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 });

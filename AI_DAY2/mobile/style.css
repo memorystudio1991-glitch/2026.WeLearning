@@ -73,7 +73,7 @@ html, body {
   pointer-events: none;
 }
 
-.brand-pill, .status-pill, .fps-pill, .emotion-pill {
+.brand-pill, .status-pill, .fps-pill, .profile-pill {
   pointer-events: auto;
   display: flex;
   align-items: center;
@@ -89,14 +89,24 @@ html, body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
-.emotion-pill {
-  border-color: rgba(255, 215, 0, 0.4);
-  color: #fef08a;
+.profile-pill {
+  border-color: rgba(0, 242, 254, 0.35);
+  color: #f1f5f9;
+  font-size: 0.72rem;
   transition: all 0.25s ease;
 }
 
-.emotion-pill #emotion-emoji {
-  font-size: 1.05rem;
+.color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: inline-block;
+}
+
+.divider {
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 1px;
 }
 
 .brand-pill {
